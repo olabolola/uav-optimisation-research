@@ -1,0 +1,1 @@
+from UAV_RL_env.envs.custom_part import class_with_the_functions
