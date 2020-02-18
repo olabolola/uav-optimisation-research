@@ -48,6 +48,11 @@ class Position:
         d = {'x' : self.x, 'y': self.y}
         return d
 
+    def __str__(self):
+        return str(self.x) + ", " + str(self.y)  
+
+    def __repr__(self):
+        return str(self)
 
 class Customer:
 

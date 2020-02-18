@@ -1,5 +1,10 @@
 import gym
-import UAV_RL_env.envs.custom_functions as custom_functions
+import UAV_RL_env
 
-env = custom_functions.custom_class(10, 10)
-env.reset()
+
+env = gym.make('HDS-v0', no_customers = 5, no_trucks = 5)
+
+action = [(i, i*2) for i in range(10)]
+obs, reward, done, info = env.step(action)
+print([obs[0][i] for i in range(5)])
+
