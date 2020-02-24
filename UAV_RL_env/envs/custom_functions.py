@@ -11,13 +11,16 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-width = 1000
-height = 1000
+width = 5000
+height = 5000
 
 class custom_class(gym.Env):
     
 
     def __init__(self, no_customers, no_trucks, no_drones):
+
+        #Control
+        self.i = 0
         #no_drones is the number of drones per truck
         super(custom_class, self).__init__()
 
@@ -57,15 +60,19 @@ class custom_class(gym.Env):
         self.drones = []
 
         for _ in range(self.no_trucks):
-            #For now all trucks and drones start at position (0, 0). We will need to change this
+            #For now all trucks and drones start at position (10, 10). We will need to change this
             #in the future when we introduce varying warehouse position, and multiple warehouses
-            position = celes.Position(0, 0)
+            
+            position = celes.Position(10, 10)
             self.truck_positions.append(position)
             truck = celes.Truck(position)
-            truck.add_drones(self.no_drones)
+            for _ in range(no_drones):
+
+                drone = celes.Drone(position)
+                truck.load_drone(drone)
+                self.drones.append(drone)
+
             self.trucks.append(truck)
-            #Extend our list of drones by the drones we just added to 'truck'
-            self.drones.extend(truck.drones)
 
         
         
@@ -79,14 +86,15 @@ class custom_class(gym.Env):
         
         
         #TODO incorporate truck actions into this
-        #For now truck actions will just be order to move the truck in a certain direction
+        #For now truck actions will just be order to move the truck in a certain direction or to launch a drone
         truck_actions = actions[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
-            self._take_truck_action(truck, truck_action)
+            self._take_truck_action(truck, truck_action[0], truck_action[1])
 
-
+        
         #Action will be a list of actions for each drone
         drone_actions = actions[1]
+        # print(drone_actions[0])
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
@@ -169,8 +177,17 @@ class custom_class(gym.Env):
 
         
         observation = (closest_trucks, closest_charging_stations, battery_lives, home_trucks)
+
+        #Info will be some debugging info
+        info = []
+        for truck in self.trucks:
+            info.append(truck.get_truck_info())
+        for drone in self.drones:
+            info.append(drone.get_drone_info())
+        
+
         #Return reward, observation, done, info
-        return observation, -1, False, {}
+        return observation, -1, False, info
 
     #TODO make this consistent wit everything else. Mainly the step function.
     def reset(self):
@@ -208,20 +225,25 @@ class custom_class(gym.Env):
         self.drones = []
 
         for _ in range(self.no_trucks):
-            #For now all trucks and drones start at position (0, 0). We will need to change this
+            #For now all trucks and drones start at position (10, 10). We will need to change this
             #in the future when we introduce varying warehouse position, and multiple warehouses
-            position = celes.Position(0, 0)
+            
+            position = celes.Position(10, 10)
             self.truck_positions.append(position)
-            truck = celes.Truck(position)
-            truck.add_drones(self.no_drones)
+            truck = celes.Truck(position, truck_speed=np.random.randint(5, 60))
+            for _ in range(self.no_drones):
+                drone = celes.Drone(celes.Position(10, 10))
+                truck.load_drone(drone)
+                self.drones.append(drone)
+                
             self.trucks.append(truck)
             #Extend our list of drones by the drones we just added to 'truck'
-            self.drones.extend(truck.drones)
 
         
 
     def render(self, mode='human', close=False):
         #TODO make this more sophisticated with animations or something
+        
         customer_x = []
         customer_y = []
         for position in self.customer_positions:
@@ -234,26 +256,34 @@ class custom_class(gym.Env):
             truck_x.append(position.x)
             truck_y.append(position.y)
         
+        
         drone_x =[]
         drone_y =[]
-        for position in self.truck_positions:
-            drone_x.append(position.x)
-            drone_y.append(position.y)
+        
+        for drone in self.drones:
+            drone_x.append(drone.position.x)
+            drone_y.append(drone.position.y)
+        print(drone_x)
+        print(drone_y)
+        
 
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
 
         
         ax1.scatter(customer_x, customer_y, c = 'r', label = 'customer')
-        ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck')
         ax1.scatter(drone_x, drone_y, c = 'b', label = 'drone')
+        ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck')
 
-        plt.show()
+        #If we just want to show the graph instead of saving it, uncomment this
+        # plt.show()
 
-    #TODO finish this
-    #Using this for now until we get a concrete idea of what exactly our truck actions and observations are
-    def _take_truck_action(self, truck, action):
-        pass
+        #This here is to save the plots we make, so we can make them
+        #into a video later
+        plt.savefig(f'images/hind{self.i}.png')
+        self.i += 1
+        plt.clf()
+    
 
 
 
@@ -272,17 +302,17 @@ class custom_class(gym.Env):
         #but we'll keep it the way it is now for better readability
 
 
-        
-        if action == "return_to_home_truck":
+        if action[0] == "go_to_position":
+            drone.go_to_position(action[1])
+        elif action[0] == "return_to_home_truck":
             drone.go_to_home_truck()
-        elif action == "go_to_closest_truck":
+        elif action[0] == "go_to_closest_truck":
+
             #We will find the closest truck in the function
             drone.go_to_closest_truck(self.trucks)
-            
-        elif action == "deliver_next_package":
+        elif action[0] == "deliver_next_package":
             drone.deliver_next_package()
-        
-        elif action == "go_to_charging_station":
+        elif action[0] == "go_to_charging_station":
             pass
             #TODO fix this make it work
             # if celes.get_euclidean_distance(drone.position, )
@@ -295,10 +325,17 @@ class custom_class(gym.Env):
     #Make sure truck don't "fall of the map"
     def move_trucks_randomly(self):
         for truck in self.trucks:
-            truck.position.x += np.random.randint(-30, 50)
-            truck.position.y += np.random.randint(-30, 50)
+            truck.position.x += np.random.randint(-10, 40)
+            truck.position.y += np.random.randint(-10, 40)
 
-    def _take_truck_action(self, truck, action):
+    def _take_truck_action(self, truck, action, position):
         #For now action is a 2-tuple that tells the truck where to go to
-        position = action
-        truck.move_towards_position(position)
+        if action == "move_towards_position":
+            truck.move_towards_position(position)
+
+    def move_drones_randomly(self):
+        for drone in self.drones:
+            drone.position.x += np.random.randint(-10, 40)
+            drone.position.y += np.random.randint(-10, 40)
+    
+    

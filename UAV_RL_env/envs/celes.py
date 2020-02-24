@@ -1,20 +1,24 @@
 class Drone:
 
     
-    def __init__(self, position, loading_capacity = 100, cost = 2, drone_speed = 100, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 50, battery = 100, drone_type = "normal", drone_id = None):
         #probably won't end up using drone type in our research
-        self.drone_type = drone_type
+        self.position = position
         self.loading_capacity = loading_capacity
-        self.battery = battery
         self.cost = cost
         self.drone_speed = drone_speed
-        #If package_weight = 0, then drone is not carrying anything
+        self.battery = battery
+        self.drone_type = drone_type
         self.drone_id = drone_id
         self.is_delivering = False
-        self.home_truck = None
-        self.position = position
+        self.home_truck = home_truck
         self.packages = []
         self.no_packages = 0
+        #This is to ensure drone doesn't just fly back to the truck it left from
+        self.host_truck = self.home_truck
+        #This is to check if drone is on its way somewhere
+        self.en_route = False
+        self.on_truck = True
 
     def get_package_dropoff_time(self, residence_type):
         if residence_type == 'apartment':
@@ -34,39 +38,68 @@ class Drone:
         #return package_weight*alpha + something to do with the battery
 
         #return function(get_euclidean_distance(destination, self.current_position), self.battery, self.speed, self.drone_type)
-        #Just for testing the drone has a range of reach of 300
-        return 300
+        #Just for testing the drone has a range of reach of infinity
+        return float('inf')
     def go_to_home_truck(self):
         #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
         if get_euclidean_distance(self.position, self.home_truck.position) < self.drone_speed:
-            self.position = self.home_truck.position
+            self.home_truck.load_drone(self)
         else:
-            self.position = self.position.get_point_on_line(self.position, self.home_truck.position)
+            if self.on_truck:
+                self.host_truck.drone.remove(self)
+            
+            self.en_route = True
+            self.on_truck = False
+            
+            self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
 
     def go_to_closest_truck(self, trucks):
         #Find the truck with min(distance) between itself and the drone
-
+        # if self.host_truck != None:
+        #     self.position.x = self.host_truck.position.x
+        #     self.position.y = self.host_truck.position.y
+        #     # self.host_truck = None
         min_distance = float('inf')
-        closest_truck = trucks[0]
+        closest_truck = None
         for truck in trucks:
-            distance = get_euclidean_distance(self.position, truck.position)
-            if distance < min_distance:
-                min_distance = distance
-                closest_truck = truck
-        if get_euclidean_distance(self.position, closest_truck.position) < self.drone_speed:
-            self.position = closest_truck.position
+            if truck.position.x != self.position.x and truck.position.y != self.position.y and self.host_truck != truck:
+                self.en_route = True
+                distance = get_euclidean_distance(self.position, truck.position)
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_truck = truck
+        if closest_truck == None:
+            return
         else:
-            self.position = self.position.get_point_on_line(self.position, closest_truck.position)
+            if self.on_truck:
+                self.host_truck.drones.remove(self)
+            self.on_truck = False
+            if get_euclidean_distance(self.position, closest_truck.position) < self.drone_speed:
+                closest_truck.load_drone(self)
+            else:
+                self.position.get_point_on_line(closest_truck.position, self.drone_speed)
+
+                
+    def go_to_position(self, position):
+        if get_euclidean_distance(self.position, position) < self.drone_speed:
+            self.position.x = position.x
+            self.position.y = position.y
+        else:
+            self.position.get_point_on_line(position, self.drone_speed)
+        print(self.position)
+        self.en_route = True
+        self.on_truck = False
 
     def deliver_next_package(self):
         customer_position = self.packages[-1].customer.position
         if get_euclidean_distance(self.position, customer_position) < self.drone_speed:
             self.position = customer_position
+            self.host_truck = None
         else:
-            self.position = self.position.get_point_on_line(self.position, customer_position)
+            self.position.get_point_on_line(customer_position, self.drone_speed)
 
     def get_drone_info(self):
-        d = {'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
+        d = {'drone_position' : self.position, 'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
         'drone_speed' : self.drone_speed, 'battery' : self.battery,
          'drone_type' : self.drone_type, 'drone_id' : self.drone_id}
         return d
@@ -123,13 +156,13 @@ class Position:
 
 
     def get_point_on_line(self, position2, distance):
+        #TODO check for division by zero
         v = position2 - self
-        v._normalize_position()
-        new_x = self.x + distance * v.x
-        new_y = self.y + distance * v.y
 
-        position = Position(new_x, new_y)
-        return position
+        v._normalize_position()
+        self.x = self.x + distance * v.x
+        self.y = self.y + distance * v.y
+
 
     
 
@@ -178,15 +211,16 @@ class Truck:
 
     #Do we just want to send the drones to this function and have them add them to its list.
     #Or do we want to send all the nitty gritty details here.
-    def add_drones(self, number, loading_capacity = 100, cost = 2, drone_speed = 100, battery = 100, drone_type = "normal", drone_id = None):
+    def add_drones(self, number):
     
-        self.no_of_drones += number
+        
         for _ in range(number):
             if self.no_vacancies > 0:
                 self.no_vacancies -= 1
-                drone = Drone(self.position, loading_capacity, cost, drone_speed, battery, drone_type, drone_id)
+                self.no_of_drones += 1
+                # drone_position = Position(self.position.x, self.position.y)
+                drone = Drone(self.position, self)
                 #TODO check if this actually makes sense (does it work python-wise)
-                drone.home_truck = self
                 self.drones.append(drone)
             else:
                 #TODO raise a custom exception
@@ -194,26 +228,55 @@ class Truck:
                 break
 
     def move_towards_position(self, position):
+        
         #This whole complicated function is to ensure the truck moves like it's in Manhattan
         if get_manhattan_distance(self.position, position) <= self.truck_speed:
-            self.position = position
+            self.position.x = position.x
+            self.position.y = position.y
+            for drone in self.drones:
+                drone.position.x = self.position.x
+                drone.position.y = self.position.y 
         else:
             units_to_move = self.truck_speed
             x_difference = position.x - self.position.x
             y_difference = position.y - self.position.y
             if abs(x_difference) > units_to_move:
                 self.position.x += units_to_move
+                for drone in self.drones:
+                    drone.position.x += units_to_move
             elif abs(y_difference) > units_to_move:
                 self.position.y += units_to_move
+                for drone in self.drones:
+                    drone.position.y += units_to_move
             else:
                 #For now we just start with the x
                 #Might want to do it in a smarter manner later
                 units_to_move -= abs(x_difference)
                 self.position.x = position.x
+                for drone in self.drones:
+                    drone.position.x = self.position.x
                 if y_difference < 0:
                     self.position.y -= units_to_move
+                    for drone in self.drones:
+                        drone.position.y -= units_to_move
                 else:
                     self.position.y += units_to_move
+                    for drone in self.drones:
+                        drone.position.y += units_to_move
+
+    #TODO complete this function with all the necessary checks
+    def load_drone(self, drone):
+        drone.host_truck = self
+        drone.position.x = self.position.x
+        drone.position.y = self.position.y
+        self.drones.append(drone)
+        self.no_of_drones += 1
+        drone.en_route = False
+        drone.on_truck = True
+    def launch_drone(self, position):
+        self.no_of_drones -= 1
+        drone = Drone(self.position.x, self.position.y)
+        return drone
 
 
 class charging_station:
