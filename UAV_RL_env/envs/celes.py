@@ -1,7 +1,7 @@
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 50, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 10, battery = 100, drone_type = "normal", drone_id = None):
         #probably won't end up using drone type in our research
         self.position = position
         self.loading_capacity = loading_capacity
@@ -19,6 +19,8 @@ class Drone:
         #This is to check if drone is on its way somewhere
         self.en_route = False
         self.on_truck = True
+        self.temp = True
+
 
     def get_package_dropoff_time(self, residence_type):
         if residence_type == 'apartment':
@@ -81,22 +83,48 @@ class Drone:
 
                 
     def go_to_position(self, position):
+        self.en_route = True
+        self.on_truck = False
         if get_euclidean_distance(self.position, position) < self.drone_speed:
             self.position.x = position.x
             self.position.y = position.y
+            self.en_route = False
+            return True
         else:
             self.position.get_point_on_line(position, self.drone_speed)
-        print(self.position)
-        self.en_route = True
-        self.on_truck = False
+            return False        
 
-    def deliver_next_package(self):
-        customer_position = self.packages[-1].customer.position
-        if get_euclidean_distance(self.position, customer_position) < self.drone_speed:
-            self.position = customer_position
-            self.host_truck = None
-        else:
-            self.position.get_point_on_line(customer_position, self.drone_speed)
+    def deliver_next_package(self, customers):
+        if self.temp:
+            self.temp = False
+            if self.drone_id == 0:
+                for package in self.host_truck.packages[:int(len(self.host_truck.packages)/5)]:
+                    self.packages.append(package)
+            elif self.drone_id == 1:
+                for package in self.host_truck.packages[int(len(self.host_truck.packages)/5):int(2*len(self.host_truck.packages)/5)]:
+                    self.packages.append(package)
+            elif self.drone_id == 2:
+                for package in self.host_truck.packages[int(2*len(self.host_truck.packages)/5):int(3*len(self.host_truck.packages)/5)]:
+                    self.packages.append(package)
+            elif self.drone_id == 3:
+                for package in self.host_truck.packages[int(3*len(self.host_truck.packages)/5):int(4*len(self.host_truck.packages)/5)]:
+                    self.packages.append(package)
+            elif self.drone_id == 4:
+                for package in self.host_truck.packages[int(4*len(self.host_truck.packages)/5):]:
+                    self.packages.append(package)
+        if len(self.packages) > 0:
+            customer_position = self.packages[-1].customer.position
+            arrived = self.go_to_position(customer_position)
+            if arrived:
+                for customer in customers:
+                    if customer.position.x == customer_position.x and customer.position.y == customer_position.y:
+                        customers.remove(customer)
+                self.packages.pop()
+                self.no_packages -= 1
+
+
+
+
 
     def get_drone_info(self):
         d = {'drone_position' : self.position, 'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
@@ -195,6 +223,7 @@ class Truck:
         self.truck_id = truck_id
         self.max_capacity = max_capacity
         self.no_vacancies = 20
+        self.packages = []
     
     def get_package_dropoff_time(self, residence_type):
         if residence_type == 'apartment':
@@ -273,10 +302,9 @@ class Truck:
         self.no_of_drones += 1
         drone.en_route = False
         drone.on_truck = True
-    def launch_drone(self, position):
-        self.no_of_drones -= 1
-        drone = Drone(self.position.x, self.position.y)
-        return drone
+
+    def load_drone_package(self, drone, package):
+        drone.load_drone_package(package)
 
 
 class charging_station:

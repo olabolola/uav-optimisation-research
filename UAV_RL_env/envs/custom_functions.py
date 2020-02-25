@@ -11,8 +11,8 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-width = 5000
-height = 5000
+width = 100
+height = 100
 
 class custom_class(gym.Env):
     
@@ -227,18 +227,23 @@ class custom_class(gym.Env):
         for _ in range(self.no_trucks):
             #For now all trucks and drones start at position (10, 10). We will need to change this
             #in the future when we introduce varying warehouse position, and multiple warehouses
-            
-            position = celes.Position(10, 10)
+            x = np.random.randint(1, width)
+            y = np.random.randint(1, height)
+            position = celes.Position(x, y)
             self.truck_positions.append(position)
+            
             truck = celes.Truck(position, truck_speed=np.random.randint(5, 60))
+            for i in range(self.no_customers):
+                package = celes.Package(self.customers[i])
+                truck.packages.append(package)
             for _ in range(self.no_drones):
-                drone = celes.Drone(celes.Position(10, 10))
+                drone = celes.Drone(celes.Position(10, 10), drone_id=_)
                 truck.load_drone(drone)
                 self.drones.append(drone)
                 
             self.trucks.append(truck)
             #Extend our list of drones by the drones we just added to 'truck'
-
+        
         
 
     def render(self, mode='human', close=False):
@@ -246,9 +251,9 @@ class custom_class(gym.Env):
         
         customer_x = []
         customer_y = []
-        for position in self.customer_positions:
-            customer_x.append(position.x)
-            customer_y.append(position.y)
+        for customer in self.customers:
+            customer_x.append(customer.position.x)
+            customer_y.append(customer.position.y)
         
         truck_x =[]
         truck_y =[]
@@ -263,8 +268,7 @@ class custom_class(gym.Env):
         for drone in self.drones:
             drone_x.append(drone.position.x)
             drone_y.append(drone.position.y)
-        print(drone_x)
-        print(drone_y)
+
         
 
         fig = plt.figure()
@@ -276,13 +280,13 @@ class custom_class(gym.Env):
         ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck')
 
         #If we just want to show the graph instead of saving it, uncomment this
-        # plt.show()
+        plt.show()
 
         #This here is to save the plots we make, so we can make them
         #into a video later
-        plt.savefig(f'images/hind{self.i}.png')
-        self.i += 1
-        plt.clf()
+        # plt.savefig(f'images/hind{self.i}.png')
+        # self.i += 1
+        # plt.clf()
     
 
 
@@ -294,7 +298,7 @@ class custom_class(gym.Env):
     def _take_drone_action(self, drone, action):
         # Actions for the drone policy:
             # a. Go back to Home truck --> action = "return_to_home_truck"
-            # b. Go to closet truck --> action = "go_to_closest_truck"
+            # b. Go to closest truck --> action = "go_to_closest_truck"
             # c. Deliver next package --> action = "deliver_next_package"
             # d. Go to charging station --> action = "go_to_charging_station"
             # e. Failsafe mode --> action = "failsafe_mode"
@@ -304,6 +308,7 @@ class custom_class(gym.Env):
 
         if action[0] == "go_to_position":
             drone.go_to_position(action[1])
+
         elif action[0] == "return_to_home_truck":
             drone.go_to_home_truck()
         elif action[0] == "go_to_closest_truck":
@@ -311,7 +316,7 @@ class custom_class(gym.Env):
             #We will find the closest truck in the function
             drone.go_to_closest_truck(self.trucks)
         elif action[0] == "deliver_next_package":
-            drone.deliver_next_package()
+            drone.deliver_next_package(self.customers)
         elif action[0] == "go_to_charging_station":
             pass
             #TODO fix this make it work
