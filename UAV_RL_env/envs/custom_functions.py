@@ -59,6 +59,7 @@ class custom_class(gym.Env):
         self.no_drones = no_drones
         self.drones = []
 
+        self.packages = []
         for _ in range(self.no_trucks):
             #For now all trucks and drones start at position (10, 10). We will need to change this
             #in the future when we introduce varying warehouse position, and multiple warehouses
@@ -208,6 +209,8 @@ class custom_class(gym.Env):
         self.customers = []
         self.customer_positions = []
         
+        #TODO figure out if customers can have multiple packages delivered to them
+        self.packages = []
         #TODO assign random positions without repitition
         
         for _ in range(self.no_customers):
@@ -217,12 +220,18 @@ class custom_class(gym.Env):
             self.customer_positions.append(position)
             customer = celes.Customer(position, 'apt', 1)
             self.customers.append(customer)
+            package = celes.Package(customer)
+            self.packages.append(package)
 
         #Truck and drone initialization
         self.trucks = []
         self.truck_positions = []
         
         self.drones = []
+
+        
+        
+
 
         for _ in range(self.no_trucks):
             #For now all trucks and drones start at position (10, 10). We will need to change this
@@ -233,9 +242,7 @@ class custom_class(gym.Env):
             self.truck_positions.append(position)
             
             truck = celes.Truck(position, truck_speed=np.random.randint(5, 60))
-            for i in range(self.no_customers):
-                package = celes.Package(self.customers[i])
-                truck.packages.append(package)
+
             for _ in range(self.no_drones):
                 drone = celes.Drone(celes.Position(10, 10), drone_id=_)
                 truck.load_drone(drone)
@@ -244,7 +251,23 @@ class custom_class(gym.Env):
             self.trucks.append(truck)
             #Extend our list of drones by the drones we just added to 'truck'
         
+        #TODO do this with clustering
+        #Package assignement to trucks
+        packages_per_truck = int(len(self.packages) / self.no_trucks)
+        for i, truck in enumerate(self.trucks):
+            for package in self.packages[i * packages_per_truck : (i + 1) * packages_per_truck]:
+                truck.load_package(package)
         
+        #Load the rest of the packages into the first truck
+        #This occurs if the number of trucks does not divide the number of packages to be delivered
+        for i in range(len(self.packages) % self.no_trucks):
+            self.trucks[0].load_package(self.packages[i])
+
+
+        for truck in self.trucks:
+            truck.assign_packages_to_drones()
+        
+
 
     def render(self, mode='human', close=False):
         #TODO make this more sophisticated with animations or something

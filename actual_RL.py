@@ -5,9 +5,10 @@ import UAV_RL_env.envs.celes as celes
 import numpy as np
 import helper_functions
 
-no_trucks = 1
+no_trucks = 3
 no_drones = 5
-env = gym.make('HDS-v0', no_customers = 30, no_trucks = no_trucks, no_drones = no_drones)
+no_customers = 30
+env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones)
 
 env.reset()
 

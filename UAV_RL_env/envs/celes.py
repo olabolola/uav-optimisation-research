@@ -19,7 +19,7 @@ class Drone:
         #This is to check if drone is on its way somewhere
         self.en_route = False
         self.on_truck = True
-        self.temp = True
+        self.packages_scheduled = []
 
 
     def get_package_dropoff_time(self, residence_type):
@@ -31,6 +31,8 @@ class Drone:
     def load_package(self, package):
         self.packages.append(package)
         self.no_packages += 1
+    def schedule_package(self, package):
+        self.packages_scheduled.append(package)
 
     #destination will be of type class: position
     #Problem with this is that it doesn't take no fly zones into account.
@@ -46,6 +48,7 @@ class Drone:
         #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
         if get_euclidean_distance(self.position, self.home_truck.position) < self.drone_speed:
             self.home_truck.load_drone(self)
+            self.en_route = False
         else:
             if self.on_truck:
                 self.host_truck.drone.remove(self)
@@ -95,32 +98,31 @@ class Drone:
             return False        
 
     def deliver_next_package(self, customers):
-        if self.temp:
-            self.temp = False
-            if self.drone_id == 0:
-                for package in self.host_truck.packages[:int(len(self.host_truck.packages)/5)]:
-                    self.packages.append(package)
-            elif self.drone_id == 1:
-                for package in self.host_truck.packages[int(len(self.host_truck.packages)/5):int(2*len(self.host_truck.packages)/5)]:
-                    self.packages.append(package)
-            elif self.drone_id == 2:
-                for package in self.host_truck.packages[int(2*len(self.host_truck.packages)/5):int(3*len(self.host_truck.packages)/5)]:
-                    self.packages.append(package)
-            elif self.drone_id == 3:
-                for package in self.host_truck.packages[int(3*len(self.host_truck.packages)/5):int(4*len(self.host_truck.packages)/5)]:
-                    self.packages.append(package)
-            elif self.drone_id == 4:
-                for package in self.host_truck.packages[int(4*len(self.host_truck.packages)/5):]:
-                    self.packages.append(package)
-        if len(self.packages) > 0:
+        
+        if self.no_packages > 0:
+            self.en_route = True
             customer_position = self.packages[-1].customer.position
             arrived = self.go_to_position(customer_position)
             if arrived:
-                for customer in customers:
-                    if customer.position.x == customer_position.x and customer.position.y == customer_position.y:
-                        customers.remove(customer)
+                customers.remove(self.packages[-1].customer)
                 self.packages.pop()
                 self.no_packages -= 1
+        else:
+            self.go_to_home_truck()
+            if not self.en_route:
+                self.load_next_package()
+    def load_next_package(self):
+        if len(self.packages_scheduled) > 0:
+            package = self.packages_scheduled[-1]
+            self.packages_scheduled.pop()
+            self.load_package(package)
+        else:
+            return
+
+
+    
+
+    
 
 
 
@@ -225,6 +227,9 @@ class Truck:
         self.no_vacancies = 20
         self.packages = []
     
+
+    def load_package(self, package):
+        self.packages.append(package)
     def get_package_dropoff_time(self, residence_type):
         if residence_type == 'apartment':
             return 10
@@ -295,6 +300,7 @@ class Truck:
 
     #TODO complete this function with all the necessary checks
     def load_drone(self, drone):
+        drone.home_truck = self
         drone.host_truck = self
         drone.position.x = self.position.x
         drone.position.y = self.position.y
@@ -305,6 +311,16 @@ class Truck:
 
     def load_drone_package(self, drone, package):
         drone.load_drone_package(package)
+
+    def assign_packages_to_drones(self):
+        packages_per_drone = int(len(self.packages) / self.no_of_drones) 
+        for i, drone in enumerate(self.drones):
+            for package in self.packages[packages_per_drone*i:packages_per_drone * (i + 1)]:
+                drone.packages_scheduled.append(package)
+        
+        for i in range(len(self.packages) % self.no_of_drones):
+            self.drones[0].schedule_package(package)
+            
 
 
 class charging_station:
