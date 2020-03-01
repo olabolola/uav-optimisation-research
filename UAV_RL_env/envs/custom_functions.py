@@ -4,7 +4,8 @@ from gym.utils import seeding
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pandas as pd
+from sklearn.cluster import KMeans
 try:
     from . import celes
 except ModuleNotFoundError:
@@ -18,20 +19,15 @@ class custom_class(gym.Env):
     
 
     def __init__(self, no_customers, no_trucks, no_drones):
-
-        #Control
+        #For making the video
         self.i = 0
+        
         #no_drones is the number of drones per truck
         super(custom_class, self).__init__()
 
         #For now say we have two charging stations at random positions on "map"
         self.charging_stations = []
-        for _ in range(2):
-            x = np.random.randint(0, width)
-            y = np.random.randint(0, height)
-            position = celes.Position(x, y)
-            charging_station = celes.charging_station(position)
-            self.charging_stations.append(charging_station)
+        
 
         
 
@@ -41,15 +37,7 @@ class custom_class(gym.Env):
         self.customers = []
         self.customer_positions = []
         
-        #TODO assign random positions without repitition
         
-        for _ in range(self.no_customers):
-            x = np.random.randint(0, width)
-            y = np.random.randint(0, height)
-            position = celes.Position(x, y)
-            self.customer_positions.append(position)
-            customer = celes.Customer(position, 'apt', 1)
-            self.customers.append(customer)
 
         #Truck and drone initialization
         self.no_trucks = no_trucks
@@ -60,25 +48,11 @@ class custom_class(gym.Env):
         self.drones = []
 
         self.packages = []
-        for _ in range(self.no_trucks):
-            #For now all trucks and drones start at position (10, 10). We will need to change this
-            #in the future when we introduce varying warehouse position, and multiple warehouses
-            
-            position = celes.Position(10, 10)
-            self.truck_positions.append(position)
-            truck = celes.Truck(position)
-            for _ in range(no_drones):
-
-                drone = celes.Drone(position)
-                truck.load_drone(drone)
-                self.drones.append(drone)
-
-            self.trucks.append(truck)
+        
 
         
         
-
-        #For now I just want to try some simple RL with trucks and drones only
+        self.centroids = None
 
 
 
@@ -100,11 +74,10 @@ class custom_class(gym.Env):
             self._take_drone_action(drone, drone_action)
 
         #Observation for a single drone is:
-            # a. Closest trucks within reach (Id and distance, available slots)
-            # b. Closest charging station.
-            # c. Battery life
-            # d. Number of packages + ( customer locations)
-            # e. Home truck
+            # a. Closest charging station.
+            # b. Battery life
+            # c. Number of packages + (customer locations)
+            # d. Home truck
 
         #TODO idea: do we want to do all these observations in a single for loop?
         #for index, drone in enumerate(self.drones): 
@@ -112,24 +85,8 @@ class custom_class(gym.Env):
 
         #Closest trucks observation for each drone
 
-        closest_trucks = []
-        
-        for _ in range(self.no_drones * self.no_trucks):
-            closest_trucks.append([])
-        #TODO do we want to return the list of closest trucks even if the drone is still on a truck?
-        
-        for index, drone in enumerate(self.drones):
-            #For now if drone is not delivering we still give it a list of trucks
-            #Maybe later we give it a list of trucks close to the destination?
-            for truck in self.trucks:
-                distance = celes.get_euclidean_distance(drone.position, truck.position)
-                RoR = drone.get_range_of_reach() 
-                if RoR >= distance:
-                    closest_trucks[index].append(truck)
-                
 
-        
-        
+
         
         #Closest charging stations observation for each drone
 
@@ -166,6 +123,7 @@ class custom_class(gym.Env):
         for drone in self.drones:
             battery_lives.append(drone.battery)
 
+
         #TODO Number of packages observation
 
         #Home truck observation for each drone
@@ -174,11 +132,17 @@ class custom_class(gym.Env):
         for drone in self.drones:
             home_trucks.append(drone.home_truck)
                 
-        
+        drone_positions = []
+        for drone in self.drones:
+            drone_positions.append(drone.position)
 
+        truck_positions = []
+        for truck in self.trucks:
+            truck_positions.append(truck.position)
         
-        observation = (closest_trucks, closest_charging_stations, battery_lives, home_trucks)
-
+        truck_observation = (truck_positions, self.centroids)
+        drone_observation = (drone_positions, closest_charging_stations, battery_lives, home_trucks)
+        observation = (truck_observation, drone_observation)
         #Info will be some debugging info
         info = []
         for truck in self.trucks:
@@ -211,17 +175,21 @@ class custom_class(gym.Env):
         
         #TODO figure out if customers can have multiple packages delivered to them
         self.packages = []
-        #TODO assign random positions without repitition
-        
         for _ in range(self.no_customers):
-            x = np.random.randint(0, width)
-            y = np.random.randint(0, height)
+
+            x = np.random.randint(1, width)
+            y = np.random.randint(1, height)
             position = celes.Position(x, y)
+            while position in self.customer_positions:
+                x = np.random.randint(1, width)
+                y = np.random.randint(1, height)
+                position = celes.Position(x, y)
             self.customer_positions.append(position)
             customer = celes.Customer(position, 'apt', 1)
-            self.customers.append(customer)
             package = celes.Package(customer)
+            customer.add_package(package)
             self.packages.append(package)
+            self.customers.append(customer)
 
         #Truck and drone initialization
         self.trucks = []
@@ -230,8 +198,6 @@ class custom_class(gym.Env):
         self.drones = []
 
         
-        
-
 
         for _ in range(self.no_trucks):
             #For now all trucks and drones start at position (10, 10). We will need to change this
@@ -244,25 +210,47 @@ class custom_class(gym.Env):
             truck = celes.Truck(position, truck_speed=np.random.randint(5, 60))
 
             for _ in range(self.no_drones):
-                drone = celes.Drone(celes.Position(10, 10), drone_id=_)
+                drone = celes.Drone(celes.Position(10, 10))
                 truck.load_drone(drone)
                 self.drones.append(drone)
                 
             self.trucks.append(truck)
             #Extend our list of drones by the drones we just added to 'truck'
         
-        #TODO do this with clustering
-        #Package assignement to trucks
-        packages_per_truck = int(len(self.packages) / self.no_trucks)
-        for i, truck in enumerate(self.trucks):
-            for package in self.packages[i * packages_per_truck : (i + 1) * packages_per_truck]:
-                truck.load_package(package)
         
-        #Load the rest of the packages into the first truck
-        #This occurs if the number of trucks does not divide the number of packages to be delivered
-        for i in range(len(self.packages) % self.no_trucks):
-            self.trucks[0].load_package(self.packages[i])
+        #TODO do this in the warehouse
+        #cluster customers, and distribute packages accordingly
+        customer_x = []
+        customer_y = []
 
+        for customer in self.customers:
+            customer_x.append(customer.position.x)
+            customer_y.append(customer.position.y)
+        
+        df = pd.DataFrame({
+            'x' : customer_x,
+            'y' : customer_y
+        })
+
+        kmeans = KMeans(n_clusters = self.no_trucks)
+        cluster_labels = kmeans.fit_predict(df)
+        
+        self.centroids = kmeans.cluster_centers_
+
+        colours = {
+            0 : 'c',
+            1 : 'm',
+            2 : 'y',
+            3 : 'k'
+        }
+        
+
+        for i, customer in zip(cluster_labels, self.customers):
+            customer.colour = colours[i]
+            # print(i)
+            for package in customer.packages:
+                self.trucks[i].load_package(package)
+        
 
         for truck in self.trucks:
             truck.assign_packages_to_drones()
@@ -274,10 +262,13 @@ class custom_class(gym.Env):
         
         customer_x = []
         customer_y = []
+
         for customer in self.customers:
             customer_x.append(customer.position.x)
             customer_y.append(customer.position.y)
         
+        
+
         truck_x =[]
         truck_y =[]
         for position in self.truck_positions:
@@ -298,11 +289,19 @@ class custom_class(gym.Env):
         ax1 = fig.add_subplot(111)
 
         
-        ax1.scatter(customer_x, customer_y, c = 'r', label = 'customer')
-        ax1.scatter(drone_x, drone_y, c = 'b', label = 'drone')
-        ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck')
+        for customer in self.customers:
+            ax1.scatter(customer.position.x, customer.position.y, c = customer.colour, alpha = 0.5, label="customer")
+        drone_plot = ax1.scatter(drone_x, drone_y, c = 'b', label = 'drone', marker = ".")
+        truck_plot = ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck', marker = ",")
 
+
+        
+       
         #If we just want to show the graph instead of saving it, uncomment this
+        plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
+        plt.xlim(-10, width)
+        plt.ylim(-10, height)
+        
         plt.show()
 
         #This here is to save the plots we make, so we can make them
@@ -357,6 +356,7 @@ class custom_class(gym.Env):
             truck.position.y += np.random.randint(-10, 40)
 
     def _take_truck_action(self, truck, action, position):
+        # print(position)
         #For now action is a 2-tuple that tells the truck where to go to
         if action == "move_towards_position":
             truck.move_towards_position(position)

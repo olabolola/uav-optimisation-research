@@ -1,7 +1,10 @@
+from sklearn.cluster import KMeans
+import random
+
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 10, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 6, battery = 100, drone_type = "normal", drone_id = None):
         #probably won't end up using drone type in our research
         self.position = position
         self.loading_capacity = loading_capacity
@@ -111,6 +114,8 @@ class Drone:
             self.go_to_home_truck()
             if not self.en_route:
                 self.load_next_package()
+
+
     def load_next_package(self):
         if len(self.packages_scheduled) > 0:
             package = self.packages_scheduled[-1]
@@ -205,18 +210,24 @@ class Customer:
         #residence_type will just be a string ("apt" or "house")
         self.residence_type = residence_type
         self.no_of_packages = no_of_packages
+        self.packages = []
+        self.colour = None
 
     def get_customer_info(self):
         d = self.position.get_position_info()
         d['residence_type'] = self.residence_type
         d['no_of_packages'] = self.no_of_packages
-        return d        
+        return d  
+
+    def add_package(self, package):
+        self.no_of_packages += 1
+        self.packages.append(package)      
     
 class Truck:
     
     no_of_drones = 0
     #We might just want to inherit from a superclass...
-    def __init__(self, position, cost = 5, truck_speed = 100, truck_id = None, max_capacity = 20):
+    def __init__(self, position, cost = 5, truck_speed = 2, truck_id = None, max_capacity = 20):
         self.cost = cost
         self.truck_speed = truck_speed
         self.position = position
@@ -262,42 +273,42 @@ class Truck:
                 break
 
     def move_towards_position(self, position):
-        
+        # print(position)
         #This whole complicated function is to ensure the truck moves like it's in Manhattan
         if get_manhattan_distance(self.position, position) <= self.truck_speed:
             self.position.x = position.x
             self.position.y = position.y
-            for drone in self.drones:
-                drone.position.x = self.position.x
-                drone.position.y = self.position.y 
         else:
             units_to_move = self.truck_speed
             x_difference = position.x - self.position.x
             y_difference = position.y - self.position.y
             if abs(x_difference) > units_to_move:
-                self.position.x += units_to_move
-                for drone in self.drones:
-                    drone.position.x += units_to_move
+                if x_difference > 0:
+                    self.position.x += units_to_move
+                else:
+                    self.position.x -= units_to_move
+
             elif abs(y_difference) > units_to_move:
-                self.position.y += units_to_move
-                for drone in self.drones:
-                    drone.position.y += units_to_move
+                if y_difference > 0:
+                    self.position.y += units_to_move
+                else:
+                    self.position.y -= units_to_move
             else:
                 #For now we just start with the x
                 #Might want to do it in a smarter manner later
                 units_to_move -= abs(x_difference)
                 self.position.x = position.x
-                for drone in self.drones:
-                    drone.position.x = self.position.x
                 if y_difference < 0:
                     self.position.y -= units_to_move
-                    for drone in self.drones:
-                        drone.position.y -= units_to_move
                 else:
                     self.position.y += units_to_move
-                    for drone in self.drones:
-                        drone.position.y += units_to_move
 
+        for drone in self.drones:
+            if drone.on_truck:
+                drone.position.x = self.position.x
+                drone.position.y = self.position.y
+
+            
     #TODO complete this function with all the necessary checks
     def load_drone(self, drone):
         drone.home_truck = self
@@ -319,9 +330,15 @@ class Truck:
                 drone.packages_scheduled.append(package)
         
         for i in range(len(self.packages) % self.no_of_drones):
-            self.drones[0].schedule_package(package)
-            
+            self.drones[0].schedule_package(self.packages[len(self.packages) - i - 1])
+        
+    
+    #TODO finish warehouse
+    class warehouse:
+        def __init__(self, position):
+            self.position = position
 
+        
 
 class charging_station:
     def __init__(self, position):
@@ -332,3 +349,15 @@ def get_euclidean_distance(position1, position2):
 
 def get_manhattan_distance(position1, position2):
     return abs(position1.x - position2.x) + abs(position1.y - position2.y)
+
+
+def pair_generator(numbers):
+    used_pairs = set()
+
+    while True:
+        pair = random.sample(numbers, 2)
+        pair = tuple(sorted(pair))
+        if pair not in used_pairs:
+            used_pairs.add(pair)
+            yield pair
+        
