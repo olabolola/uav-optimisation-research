@@ -1,9 +1,5 @@
 import gym
-import UAV_RL_env
-import numpy as np
-import UAV_RL_env.envs.celes as celes
-import numpy as np
-import helper_functions
+
 
 
 def trucks_arrived(trucks, centroids):
@@ -11,7 +7,18 @@ def trucks_arrived(trucks, centroids):
     #Returns false otherwise
     pass
 
+    
+env_dict = gym.envs.registration.registry.env_specs.copy()
+for env in env_dict:
+     if 'HDS' in env:
+          print('Remove {} from registry'.format(env))
+          del gym.envs.registration.registry.env_specs[env]
 
+import UAV_RL_env
+import numpy as np
+import UAV_RL_env.envs.celes as celes
+import numpy as np
+import helper_functions
 
 no_trucks = 4
 no_drones = 5
@@ -56,7 +63,7 @@ for i in range(no_trucks*no_drones):
 
 action = (truck_actions, drone_actions)
 
-for _ in range(200):
+for _ in range(100):
     obs, q, w, e = env.step(action)
     # print(obs[1][0])
     env.render()
