@@ -55,7 +55,7 @@ action = (truck_actions, drone_actions)
 env.render()
 for _ in range(100):
     
-    a, b, c, info = env.step(action)
+   a, b, c, info = env.step(action)
 env.render()
 
 for i in range(no_trucks*no_drones):
@@ -63,10 +63,12 @@ for i in range(no_trucks*no_drones):
 
 action = (truck_actions, drone_actions)
 
-for _ in range(100):
-    obs, q, w, e = env.step(action)
+while True:
+    obs, reward, done, info = env.step(action)
     # print(obs[1][0])
     env.render()
+    if done:
+        break
 # helper_functions.make_video()
 
 
