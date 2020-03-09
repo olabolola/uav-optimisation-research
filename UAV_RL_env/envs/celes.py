@@ -3,13 +3,15 @@ import pandas as pd
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost = 2, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  2, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
         self.position = position
         self.loading_capacity = loading_capacity
         self.cost = cost
         self.drone_speed = drone_speed
         #Battery is just a number representing the percentage of battery remaining
         self.battery = battery
+        self.max_battery = 300
+        self.charge_increase = 3
         self.drone_id = drone_id
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
         self.home_truck = home_truck
@@ -45,44 +47,61 @@ class Drone:
         pass
 
 
-    #destination will be of type class: position
-    def get_range_of_reach(self, package_weight = 10):
-        #return some equation involving the parameters above
-        #return package_weight*alpha + something to do with the battery
 
-        #return function(get_euclidean_distance(destination, self.current_position), self.battery, self.speed, self.drone_type)
-        #Just for testing the drone has a range of reach of infinity
-        return 45
 
 
     def go_to_home_truck(self):
 
-        if get_euclidean_distance(self.position, self.home_truck.position) <= self.get_range_of_reach():
+        distance = get_euclidean_distance(self.position, self.home_truck.position)
+
+        if distance <= self.get_range_of_reach():
             #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
-            if get_euclidean_distance(self.position, self.home_truck.position) < self.drone_speed:
+            if distance <=   self.drone_speed:
+                self.consume_battery(distance)
                 self.home_truck.load_drone(self)
             else:            
                 self.en_route = True
                 self.on_truck = False
                 self.is_delivering = False
-                
+                self.consume_battery(distance)
                 self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
 
 
                 
     def go_to_position(self, position):
-        if get_euclidean_distance(self.position, position) <= self.get_range_of_reach():
+
+        distance = get_euclidean_distance(self.position, position)
+
+        if distance * 2 <= self.get_range_of_reach():
             self.en_route = True
             self.on_truck = False
-            if get_euclidean_distance(self.position, position) < self.drone_speed:
+            if distance < self.drone_speed:
+                self.consume_battery(distance)
                 self.position.x = position.x
                 self.position.y = position.y
                 self.en_route = False
                 return True
             else:
                 self.position.get_point_on_line(position, self.drone_speed)
+                self.consume_battery(distance)
                 return False
-        return False        
+        return False   
+
+    def consume_battery(self, distance):
+        if self.battery - self.cost < 0:
+            self.battery = 0
+        else:
+            self.battery -= self.cost  
+        
+
+    def get_range_of_reach(self):
+
+        #What is the maximum distance our drone can travel with its current battery level
+        # position1 = Position(1, 1)
+        # position2 = Position(self.battery * self.drone_speed, 1)
+        # return get_euclidean_distance(position1, position2)
+
+        return self.battery / (self.cost * self.drone_speed)
 
     def deliver_next_package(self, customers):
         
@@ -101,6 +120,12 @@ class Drone:
                 if self.home_truck.no_packages > 0:
                     self.load_package()
 
+    def check_charging(self):
+        if self.on_truck:
+            if self.battery + self.charge_increase< self.max_battery:
+                self.battery += self.charge_increase
+            else:
+                self.battery = self.max_battery
 
     def get_drone_info(self):
         d = {'drone_position' : self.position, 'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
@@ -289,6 +314,8 @@ class Truck:
         self.drones.append(drone)
         self.no_of_drones += 1
         drone.en_route = False
+        drone.on_truck = True
+        drone.is_delivering = False
         # drone.on_truck = True
         # drone.is_delivering = True
 
@@ -327,10 +354,15 @@ class Warehouse:
         centroids = kmeans.cluster_centers_
 
         colours = {
-            0 : 'c',
-            1 : 'm',
-            2 : 'y',
-            3 : 'k'
+            0 : '#FFFF00',
+            1 : '#00FFFF',
+            2 : '#FF00FF',
+            3 : '#C0C0C0',
+            4 : '#808080',
+            5 : '#800000',
+            6 : '#808000',
+            7 : '#800080',
+            8 : '#008080'
         }
         
 

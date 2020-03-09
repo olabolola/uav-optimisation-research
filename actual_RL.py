@@ -20,7 +20,7 @@ import UAV_RL_env.envs.celes as celes
 import numpy as np
 import helper_functions
 
-no_trucks = 4
+no_trucks = 2
 no_drones = 5
 no_customers = 100
 env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones)

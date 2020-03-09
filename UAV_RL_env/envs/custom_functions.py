@@ -252,7 +252,7 @@ class custom_class(gym.Env):
         #We could probably use a simpler encoding scheme for the drone actions
         #but we'll keep it the way it is now for better readability
 
-
+        drone.check_charging()
         if action[0] == "go_to_position":
             drone.go_to_position(action[1])
         elif action[0] == "return_to_home_truck":
