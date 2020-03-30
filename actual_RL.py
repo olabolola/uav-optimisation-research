@@ -20,10 +20,11 @@ import UAV_RL_env.envs.celes as celes
 import numpy as np
 import helper_functions
 
-no_trucks = 2
+no_trucks = 3
+no_clusters = int(no_trucks*2)
 no_drones = 5
 no_customers = 100
-env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones)
+env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones, no_clusters=no_clusters)
 
 env.reset()
 
@@ -32,43 +33,38 @@ drone_actions = []
 
 
 for i in range(no_trucks):
-    truck_actions.append(("nothing", None))
+    truck_actions.append(("go_to_next_cluster", None))
+    drone_actions.append([])
+# print(drone_actions)
 
-
-for _ in range(no_drones*no_trucks):
-    drone_actions.append(("nothing", None))
-
-action = (truck_actions, drone_actions)
-
-obs, b, c, d = env.step(action)
-centroids = obs[0][1]
-
-for i, pos in enumerate(centroids):
-    x = pos[0]
-    y = pos[1]
-    print(x, y)
-    position = celes.Position(x, y)
-    truck_actions[i] = ("move_towards_position", position)
-    
-action = (truck_actions, drone_actions)
-
-env.render()
-for _ in range(100):
-    
-   a, b, c, info = env.step(action)
-env.render()
-
-for i in range(no_trucks*no_drones):
-    drone_actions[i] = ("deliver_next_package", None)
-
+for i in range(no_trucks):
+    for _ in range(no_drones):
+        drone_actions[i].append("nothing")
 action = (truck_actions, drone_actions)
 
 while True:
     obs, reward, done, info = env.step(action)
-    # print(obs[1][0])
     env.render()
+    trucks = obs[0][0]
+    for i, truck in enumerate(trucks):
+
+        if not truck.is_moving:
+            for j in range(no_drones):
+                drone_actions[i][j] = ('deliver_next_package')
+        else:
+            for j in range(no_drones):
+                drone_actions[i][j] = 'nothing'
+    drone_actions1 = []
+    for i in range(no_trucks):
+        for j in range(no_drones):
+            drone_actions1.append(drone_actions[i][j])
+    action = (truck_actions, drone_actions1)
+
+            
     if done:
         break
+
+    
 # helper_functions.make_video()
 
 

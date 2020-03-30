@@ -3,15 +3,19 @@ import pandas as pd
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  2, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  0.5, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
         self.position = position
         self.loading_capacity = loading_capacity
+
+        #Drone cost is defined as the amount of battery consumed per unit of drone_speed distance crossed
         self.cost = cost
+
+        #Drone speed is given in units_of_distance/s
         self.drone_speed = drone_speed
+
         #Battery is just a number representing the percentage of battery remaining
-        self.battery = battery
-        self.max_battery = 300
-        self.charge_increase = 3
+        self.battery = 100
+        self.charge_increase = 2
         self.drone_id = drone_id
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
         self.home_truck = home_truck
@@ -39,7 +43,6 @@ class Drone:
             return 5
 
     def load_package(self):
-
         self.home_truck.load_drone_package(self)
 
 
@@ -54,44 +57,42 @@ class Drone:
 
         distance = get_euclidean_distance(self.position, self.home_truck.position)
 
-        if distance <= self.get_range_of_reach():
-            #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
-            if distance <=   self.drone_speed:
-                self.consume_battery(distance)
+        #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
+        if distance <= self.drone_speed:
+            self.consume_battery()
+            if not self.on_truck:
                 self.home_truck.load_drone(self)
-            else:            
-                self.en_route = True
-                self.on_truck = False
-                self.is_delivering = False
-                self.consume_battery(distance)
-                self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
+        else:            
+            self.en_route = True
+            self.on_truck = False
+            self.is_delivering = False
+            self.consume_battery()
+            self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
 
 
                 
     def go_to_position(self, position):
-
         distance = get_euclidean_distance(self.position, position)
-
-        if distance * 2 <= self.get_range_of_reach():
-            self.en_route = True
-            self.on_truck = False
-            if distance < self.drone_speed:
-                self.consume_battery(distance)
-                self.position.x = position.x
-                self.position.y = position.y
-                self.en_route = False
-                return True
-            else:
-                self.position.get_point_on_line(position, self.drone_speed)
-                self.consume_battery(distance)
-                return False
+        self.en_route = True
+        self.on_truck = False
+        if distance < self.drone_speed:
+            self.consume_battery()
+            self.position.x = position.x
+            self.position.y = position.y
+            self.en_route = False
+            return True
+        else:
+            self.position.get_point_on_line(position, self.drone_speed)
+            self.consume_battery()
+            return False
         return False   
 
-    def consume_battery(self, distance):
+    def consume_battery(self):
         if self.battery - self.cost < 0:
             self.battery = 0
         else:
             self.battery -= self.cost  
+
         
 
     def get_range_of_reach(self):
@@ -105,14 +106,30 @@ class Drone:
 
     def deliver_next_package(self, customers):
         
+        #First check if we have any packages to deliver. If that is the case check if we can reach
+        #the customers using our current charge. If so then deliver.
         if self.no_packages > 0:
+            
             customer_position = self.packages[-1].customer.position
+
+            #TODO update this to incorporate all the customers in the run
+            distance = get_euclidean_distance(self.position, customer_position)
+
+            arrived = None
+
+            #TODO BRING THIS BACK
+            # if self.on_truck and 2 * distance <= self.get_range_of_reach():
+            if self.on_truck:
+                self.home_truck.no_drones -= 1
             arrived = self.go_to_position(customer_position)
+            # elif not self.on_truck:
+            #     arrived = self.go_to_position(customer_position)
+
             if arrived:
-                
                 customers.remove(self.packages[-1].customer)
                 self.packages.pop()
                 self.no_packages -= 1
+        #If we have no more packages, go back to the home truck
         else:
 
             self.go_to_home_truck()
@@ -120,12 +137,12 @@ class Drone:
                 if self.home_truck.no_packages > 0:
                     self.load_package()
 
-    def check_charging(self):
+    def charge(self):
         if self.on_truck:
-            if self.battery + self.charge_increase< self.max_battery:
+            if self.battery + self.charge_increase < 100:
                 self.battery += self.charge_increase
             else:
-                self.battery = self.max_battery
+                self.battery = 100
 
     def get_drone_info(self):
         d = {'drone_position' : self.position, 'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
@@ -220,46 +237,60 @@ class Truck:
     
     no_of_drones = 0
     #We might just want to inherit from a superclass...
-    def __init__(self, position, cost = 5, truck_speed = 2, truck_id = None, max_package_capacity = 20):
+    def __init__(self, position, cost = 5, truck_speed = 5, truck_id = None, max_package_capacity = 20, total_no_drones = 0):
         self.cost = cost
         self.truck_speed = truck_speed
         self.position = position
+
         #Each truck has a number of drones. Do we want this as a feature of the truck?
+        #These two attributes pertain to the drones CURRENTLY ON THE TRUCK
         self.drones = []
         self.no_drones = 0
+
+        #This attribute pertains to the drones wherever they may be
+        self.total_no_drones = total_no_drones
 
         self.truck_id = truck_id
         self.max_package_capacity = max_package_capacity
 
-        self.packages = []
+        self.packages = {}
         self.no_packages = 0
+
+
+        #List of cluster centroids truck must deliver to
+        self.cluster_centroids = []
+
+        self.is_moving = False
+
+        #This is the cluster the truck is currently delivering from
+        self.current_cluster = None
     
 
-    def load_package(self, package):
-        self.packages.append(package)
+    def load_package(self, package, cluster):
+        if cluster not in self.packages:
+            self.packages[cluster] = []
+        self.packages[cluster].append(package)
         self.no_packages += 1
 
-    def get_package_dropoff_time(self, residence_type):
-        if residence_type == 'apartment':
-            return 10
-        elif residence_type == 'house':
-            return 5
-
+    def sort_packages(self):
+        for k, v in self.packages.items():
+            self.packages[k].sort(key = lambda x : get_euclidean_distance(x.customer.position, self.current_cluster), reverse=True)
+        
     def load_drone_package(self, drone):
         #TODO make this more smart
-        #for now load the package with minimum distance from drone
-        min_distance = get_euclidean_distance(drone.position, self.packages[0].customer.position)
-        package_to_deliver = self.packages[0]
-        for package in self.packages:
-            if get_euclidean_distance(drone.position, package.customer.position) < min_distance:
-                min_distance = get_euclidean_distance(self.position, package.customer.position)
-                package_to_deliver = package
-        
-        self.packages.remove(package_to_deliver)
-        self.no_packages -= 1
+        #For now just assign package furthest away
 
-        drone.packages.append(package_to_deliver)
-        drone.no_packages += 1
+        if len(self.packages[self.current_cluster.x*self.current_cluster.y]) > 0:
+            package_to_deliver = self.packages[self.current_cluster.x*self.current_cluster.y][0]
+            self.packages[self.current_cluster.x*self.current_cluster.y].remove(package_to_deliver)
+            self.no_packages -= 1
+
+            drone.packages.append(package_to_deliver)
+            drone.no_packages += 1
+
+    def add_cluster_centroid(self, pos):
+        self.cluster_centroids.append(Position(pos[0], pos[1]))
+    
 
     def get_truck_info(self):
         d = self.position.get_position_info()
@@ -270,7 +301,7 @@ class Truck:
 
 
     def move_towards_position(self, position):
-        # print(position)
+        self.is_moving = True
         #This whole complicated function is to ensure the truck moves like it's in Manhattan
         if get_manhattan_distance(self.position, position) <= self.truck_speed:
             self.position.x = position.x
@@ -305,19 +336,58 @@ class Truck:
                 drone.position.x = self.position.x
                 drone.position.y = self.position.y
 
+        if self.position.x == position.x and self.position.y == position.y:
+            self.is_moving = False
+
+            return True
+        else:
+            return False
+
+        
+
+    def go_to_next_cluster(self):
+        if len(self.cluster_centroids) > 0 and self.cluster_finished():
+            self.current_cluster = self.cluster_centroids[-1]
+            arrived = self.move_towards_position(self.cluster_centroids[-1])
+
+            if arrived:
+                self.cluster_centroids.pop()
+        else:
+            
+            self.move_towards_position(self.current_cluster)
+
+            
+
+
+    def cluster_finished(self):
+        #Return true if we have delivered all packages in cluster
+        if self.total_no_drones != self.no_drones:            
+            return False
+        
+        if self.current_cluster != None and len(self.packages[self.current_cluster.x*self.current_cluster.y]) != 0:
+            return False
+
+        #Make sure none of the drones are carrying packages
+        drones_delivered = True
+        for drone in self.drones:
+            if drone.no_packages != 0:
+                drones_delivered = False
+
+        return drones_delivered
+
             
     #TODO complete this function with all the necessary checks
     def load_drone(self, drone):
-        drone.home_truck = self
+
         drone.position.x = self.position.x
         drone.position.y = self.position.y
+
         self.drones.append(drone)
-        self.no_of_drones += 1
+        self.no_drones += 1
+
         drone.en_route = False
         drone.on_truck = True
         drone.is_delivering = False
-        # drone.on_truck = True
-        # drone.is_delivering = True
 
 
 
@@ -335,7 +405,7 @@ class Warehouse:
     def __init__(self, position):
         self.position = position
     
-    def cluster_and_colour(self, customers, trucks, no_trucks):
+    def cluster_and_colour(self, customers, trucks, no_clusters):
         customer_x = []
         customer_y = []
 
@@ -348,7 +418,7 @@ class Warehouse:
             'y' : customer_y
         })
 
-        kmeans = KMeans(n_clusters = no_trucks)
+        kmeans = KMeans(n_clusters = no_clusters)
         cluster_labels = kmeans.fit_predict(df)
         
         centroids = kmeans.cluster_centers_
@@ -365,13 +435,30 @@ class Warehouse:
             8 : '#008080'
         }
         
+        #Here we just give all the packages to each truck based on the cluster (not sorted)
 
-        for i, customer in zip(cluster_labels, customers):
-            customer.colour = colours[i]
+        #TODO make this work for any values of no_trucks and no_clusters
+        
+        for i in range(no_clusters):
+            trucks[int(i/2)].add_cluster_centroid(centroids[i])
+
+        for cluster_label, customer in zip(cluster_labels, customers):
+            customer.colour = colours[cluster_label]
             for package in customer.packages:
-                trucks[i].load_package(package)
+                truck_idx = int(cluster_label / 2)
+                trucks[truck_idx].load_package(package, centroids[cluster_label][0]*centroids[cluster_label][1])
 
-        return centroids
+        #Give a random default cluster to begin with
+        for truck in trucks:
+            truck.current_cluster = truck.cluster_centroids[-1]
+        #Here we sort the packages in each truck based on the distance from the cluster centroid (Descending)
+       
+        for truck in trucks:
+            truck.sort_packages()
+
+        
+
+        
 
 
 def get_euclidean_distance(position1, position2):
