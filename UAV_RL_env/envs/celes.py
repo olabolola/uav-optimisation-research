@@ -51,8 +51,6 @@ class Drone:
 
 
 
-
-
     def go_to_home_truck(self):
 
         distance = get_euclidean_distance(self.position, self.home_truck.position)
@@ -273,23 +271,25 @@ class Truck:
         self.no_packages += 1
 
     def sort_packages(self):
-        for k, v in self.packages.items():
-            self.packages[k].sort(key = lambda x : get_euclidean_distance(x.customer.position, self.current_cluster), reverse=True)
+        for cluster in self.packages.keys():
+            cluster_position = Position(cluster[0], cluster[1])
+            print(self.truck_id)
+            self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : get_euclidean_distance(x.customer.position, cluster_position), reverse=True)
         
     def load_drone_package(self, drone):
         #TODO make this more smart
         #For now just assign package furthest away
 
-        if len(self.packages[self.current_cluster.x*self.current_cluster.y]) > 0:
-            package_to_deliver = self.packages[self.current_cluster.x*self.current_cluster.y][0]
-            self.packages[self.current_cluster.x*self.current_cluster.y].remove(package_to_deliver)
+        if len(self.packages[self.current_cluster]) > 0:
+            package_to_deliver = self.packages[self.current_cluster][0]
+            self.packages[self.current_cluster].remove(package_to_deliver)
             self.no_packages -= 1
 
             drone.packages.append(package_to_deliver)
             drone.no_packages += 1
 
     def add_cluster_centroid(self, pos):
-        self.cluster_centroids.append(Position(pos[0], pos[1]))
+        self.cluster_centroids.append(tuple(pos))
     
 
     def get_truck_info(self):
@@ -346,15 +346,18 @@ class Truck:
         
 
     def go_to_next_cluster(self):
+        # cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
         if len(self.cluster_centroids) > 0 and self.cluster_finished():
             self.current_cluster = self.cluster_centroids[-1]
-            arrived = self.move_towards_position(self.cluster_centroids[-1])
+            cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
+            arrived = self.move_towards_position(cluster_position)
 
             if arrived:
+                # self.sort_packages(self.current_cluster.x*self.current_cluster.y)
                 self.cluster_centroids.pop()
         else:
-            
-            self.move_towards_position(self.current_cluster)
+            cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
+            self.move_towards_position(cluster_position)
 
             
 
@@ -364,7 +367,7 @@ class Truck:
         if self.total_no_drones != self.no_drones:            
             return False
         
-        if self.current_cluster != None and len(self.packages[self.current_cluster.x*self.current_cluster.y]) != 0:
+        if self.current_cluster != None and len(self.packages[self.current_cluster]) != 0:
             return False
 
         #Make sure none of the drones are carrying packages
@@ -442,19 +445,27 @@ class Warehouse:
         for i in range(no_clusters):
             trucks[int(i/2)].add_cluster_centroid(centroids[i])
 
+        # for cluster_label, customer in zip(cluster_labels, customers):
+        #     customer.colour = colours[cluster_label]
+        #     for package in customer.packages:
+        #         truck_idx = int(cluster_label / 2)
+        #         trucks[truck_idx].load_package(package, centroids[cluster_label][0]*centroids[cluster_label][1])
+
         for cluster_label, customer in zip(cluster_labels, customers):
             customer.colour = colours[cluster_label]
             for package in customer.packages:
                 truck_idx = int(cluster_label / 2)
-                trucks[truck_idx].load_package(package, centroids[cluster_label][0]*centroids[cluster_label][1])
+                trucks[truck_idx].load_package(package, tuple(centroids[cluster_label]))
 
         #Give a random default cluster to begin with
         for truck in trucks:
             truck.current_cluster = truck.cluster_centroids[-1]
+
         #Here we sort the packages in each truck based on the distance from the cluster centroid (Descending)
-       
         for truck in trucks:
             truck.sort_packages()
+
+        
 
         
 
