@@ -3,7 +3,7 @@ import pandas as pd
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  0.5, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  1, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
         self.position = position
         self.loading_capacity = loading_capacity
 
@@ -113,15 +113,14 @@ class Drone:
             #TODO update this to incorporate all the customers in the run
             distance = get_euclidean_distance(self.position, customer_position)
 
-            arrived = None
+            arrived = False
 
-            #TODO BRING THIS BACK
-            # if self.on_truck and 2 * distance <= self.get_range_of_reach():
-            if self.on_truck:
+            if self.on_truck and distance / 2 <= self.get_range_of_reach():
                 self.home_truck.no_drones -= 1
-            arrived = self.go_to_position(customer_position)
-            # elif not self.on_truck:
-            #     arrived = self.go_to_position(customer_position)
+
+                arrived = self.go_to_position(customer_position)
+            elif not self.on_truck:
+                arrived = self.go_to_position(customer_position)
 
             if arrived:
                 customers.remove(self.packages[-1].customer)
@@ -442,20 +441,34 @@ class Warehouse:
 
         #TODO make this work for any values of no_trucks and no_clusters
         
-        for i in range(no_clusters):
-            trucks[int(i/2)].add_cluster_centroid(centroids[i])
+        no_trucks = len(trucks)
+
+
+        # for i in range(no_clusters):
+        #     trucks[int(i/2)].add_cluster_centroid(centroids[i])
 
         # for cluster_label, customer in zip(cluster_labels, customers):
         #     customer.colour = colours[cluster_label]
         #     for package in customer.packages:
         #         truck_idx = int(cluster_label / 2)
-        #         trucks[truck_idx].load_package(package, centroids[cluster_label][0]*centroids[cluster_label][1])
+        #         trucks[truck_idx].load_package(package, tuple(centroids[cluster_label]))
+
+        #Uniformly distribute the cluster centroids among the trucks
+
+        no_buckets = int(no_clusters / no_trucks)
+
+        for i in range(no_clusters):
+            truck_index = int(i / no_buckets) % no_trucks
+            trucks[truck_index].add_cluster_centroid(centroids[i]) 
 
         for cluster_label, customer in zip(cluster_labels, customers):
             customer.colour = colours[cluster_label]
             for package in customer.packages:
-                truck_idx = int(cluster_label / 2)
+                truck_idx = int(cluster_label / no_buckets) % no_trucks
                 trucks[truck_idx].load_package(package, tuple(centroids[cluster_label]))
+        
+
+        # print(no_trucks, no_clusters)
 
         #Give a random default cluster to begin with
         for truck in trucks:

@@ -235,9 +235,13 @@ class custom_class(gym.Env):
 
         #This here is to save the plots we make, so we can make them
         #into a video later
+
         # plt.savefig(f'images/hind{self.i}.png')
         # self.i += 1
         # plt.clf()
+
+        #Trying the new animation technique
+        # return plt.imshow()
     
 
 

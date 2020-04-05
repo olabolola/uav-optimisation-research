@@ -1,12 +1,6 @@
 import gym
 
 
-
-def trucks_arrived(trucks, centroids):
-    #Returns true if all trucks have reached the centroids
-    #Returns false otherwise
-    pass
-
     
 env_dict = gym.envs.registration.registry.env_specs.copy()
 for env in env_dict:
@@ -20,9 +14,12 @@ import UAV_RL_env.envs.celes as celes
 import numpy as np
 import helper_functions
 
-no_trucks = 3
-no_clusters = int(no_trucks*2)
-no_drones = 5
+
+
+
+no_trucks = 1
+no_clusters = 5
+no_drones = 1
 no_customers = 100
 env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones, no_clusters=no_clusters)
 
