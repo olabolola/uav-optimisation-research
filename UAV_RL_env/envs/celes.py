@@ -123,7 +123,12 @@ class Drone:
                 arrived = self.go_to_position(customer_position)
 
             if arrived:
-                customers.remove(self.packages[-1].customer)
+                if self.packages[-1].customer.no_of_packages == 1:
+                    customers.remove(self.packages[-1].customer)
+                    self.packages[-1].customer.no_of_packages -= 1
+                else:
+                    self.packages[-1].customer.no_of_packages -= 1
+
                 self.packages.pop()
                 self.no_packages -= 1
         #If we have no more packages, go back to the home truck
@@ -211,7 +216,7 @@ class Position:
 
 class Customer:
 
-    def __init__(self, position, residence_type, no_of_packages):
+    def __init__(self, position, residence_type, no_of_packages = 0):
         #Location will be a class of type position (defined by x and y)
         self.position = position
         #residence_type will just be a string ("apt" or "house")
@@ -272,20 +277,51 @@ class Truck:
     def sort_packages(self):
         for cluster in self.packages.keys():
             cluster_position = Position(cluster[0], cluster[1])
-            print(self.truck_id)
             self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : get_euclidean_distance(x.customer.position, cluster_position), reverse=True)
         
     def load_drone_package(self, drone):
         #TODO make this more smart
         #For now just assign package furthest away
 
-        if len(self.packages[self.current_cluster]) > 0:
-            package_to_deliver = self.packages[self.current_cluster][0]
-            self.packages[self.current_cluster].remove(package_to_deliver)
-            self.no_packages -= 1
 
-            drone.packages.append(package_to_deliver)
-            drone.no_packages += 1
+        #Test scenario 1
+        #This capacity thing is just for testing
+        #Problem here is that the next package delivered will be the next furthest from the truck!
+        no_extra_packages = 1
+        # for _ in range(no_extra_packages):
+
+        #     if len(self.packages[self.current_cluster]) > 0:
+        #         package_to_deliver = self.packages[self.current_cluster][0]
+        #         self.packages[self.current_cluster].remove(package_to_deliver)
+        #         self.no_packages -= 1
+
+        #         drone.packages.append(package_to_deliver)
+        #         drone.no_packages += 1
+        
+        #Test scenario 2
+        #Here we deliver the next closest to from the package we are delivering
+        #We always load the first package
+        if len(self.packages[self.current_cluster]) > 0:
+                package_to_deliver = self.packages[self.current_cluster][0]
+                self.packages[self.current_cluster].remove(package_to_deliver)
+                self.no_packages -= 1
+
+                drone.packages.append(package_to_deliver)
+                drone.no_packages += 1
+        for _ in range(no_extra_packages):
+
+            if len(self.packages[self.current_cluster]) > 0:
+                package_to_deliver = self.packages[self.current_cluster][-1]
+                min_distance = get_euclidean_distance(package_to_deliver.customer.position, drone.packages[-1].customer.position)
+                for package in self.packages[self.current_cluster]:
+                    if get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position) < min_distance:
+                        min_distance = get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position)
+                        package_to_deliver = package
+                self.packages[self.current_cluster].remove(package_to_deliver)
+                self.no_packages -= 1
+
+                drone.packages.append(package_to_deliver)
+                drone.no_packages += 1
 
     def add_cluster_centroid(self, pos):
         self.cluster_centroids.append(tuple(pos))
@@ -426,7 +462,7 @@ class Warehouse:
         centroids = kmeans.cluster_centers_
 
         colours = {
-            0 : '#FFFF00',
+            0 : '#112233',
             1 : '#00FFFF',
             2 : '#FF00FF',
             3 : '#C0C0C0',
@@ -468,7 +504,6 @@ class Warehouse:
                 trucks[truck_idx].load_package(package, tuple(centroids[cluster_label]))
         
 
-        # print(no_trucks, no_clusters)
 
         #Give a random default cluster to begin with
         for truck in trucks:

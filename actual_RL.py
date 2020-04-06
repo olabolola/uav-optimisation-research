@@ -17,10 +17,10 @@ import helper_functions
 
 
 
-no_trucks = 1
-no_clusters = 5
-no_drones = 1
-no_customers = 100
+no_trucks = 3
+no_clusters = 7
+no_drones = 3
+no_customers = 60
 env = gym.make('HDS-v0', no_customers = no_customers, no_trucks = no_trucks, no_drones = no_drones, no_clusters=no_clusters)
 
 env.reset()

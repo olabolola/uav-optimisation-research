@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.cluster import KMeans
+import random
 
 try:
     from . import celes
@@ -144,10 +145,16 @@ class custom_class(gym.Env):
                 y = np.random.randint(1, height)
                 position = celes.Position(x, y)
             self.customer_positions.append(position)
-            customer = celes.Customer(position, 'apt', 1)
-            package = celes.Package(customer)
-            customer.add_package(package)
-            self.packages.append(package)
+            customer = celes.Customer(position, 'apt')
+            #For now each customer has a random number of packages between 1 and 5.
+            #50% 1, 30% 2, 10% 3, 5% 4, 5% 5.
+            # no_of_packages = 1
+            no_of_packages = np.random.choice(np.arange(1, 6), p = [0.5, 0.3, 0.1, 0.05, 0.05])
+            for _ in range(no_of_packages):
+                package = celes.Package(customer)
+                customer.add_package(package)
+                self.packages.append(package)
+
             self.customers.append(customer)
 
         #Truck and drone initialization
