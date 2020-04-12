@@ -3,7 +3,8 @@ import pandas as pd
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  1, drone_speed = 2, battery = 100, drone_type = "normal", drone_id = None):
+    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  2, drone_speed = 2, battery = 100, drone_id = None):
+        
         self.position = position
         self.loading_capacity = loading_capacity
 
@@ -24,11 +25,7 @@ class Drone:
         #The packages list contains the packages the drone is carrying RIGHT NOW
         self.packages = []
         self.no_packages = 0
-        
-        #The packages_scheduled list contains the packages the drone will deliver in the future
-        self.packages_scheduled = []
-        self.no_packages_scheduled = 0
-       
+               
         #This is to check if drone is on its way somewhere
         self.en_route = False
         self.on_truck = True
@@ -96,9 +93,6 @@ class Drone:
     def get_range_of_reach(self):
 
         #What is the maximum distance our drone can travel with its current battery level
-        # position1 = Position(1, 1)
-        # position2 = Position(self.battery * self.drone_speed, 1)
-        # return get_euclidean_distance(position1, position2)
 
         return self.battery / (self.cost * self.drone_speed)
 
@@ -240,6 +234,7 @@ class Truck:
     no_of_drones = 0
     #We might just want to inherit from a superclass...
     def __init__(self, position, cost = 5, truck_speed = 5, truck_id = None, max_package_capacity = 20, total_no_drones = 0):
+        
         self.cost = cost
         self.truck_speed = truck_speed
         self.position = position
@@ -283,22 +278,7 @@ class Truck:
         #TODO make this more smart
         #For now just assign package furthest away
 
-
-        #Test scenario 1
-        #This capacity thing is just for testing
-        #Problem here is that the next package delivered will be the next furthest from the truck!
-        no_extra_packages = 1
-        # for _ in range(no_extra_packages):
-
-        #     if len(self.packages[self.current_cluster]) > 0:
-        #         package_to_deliver = self.packages[self.current_cluster][0]
-        #         self.packages[self.current_cluster].remove(package_to_deliver)
-        #         self.no_packages -= 1
-
-        #         drone.packages.append(package_to_deliver)
-        #         drone.no_packages += 1
-        
-        #Test scenario 2
+        no_extra_packages = 2   
         #Here we deliver the next closest to from the package we are delivering
         #We always load the first package
         if len(self.packages[self.current_cluster]) > 0:
@@ -308,6 +288,7 @@ class Truck:
 
                 drone.packages.append(package_to_deliver)
                 drone.no_packages += 1
+
         for _ in range(no_extra_packages):
 
             if len(self.packages[self.current_cluster]) > 0:
@@ -426,17 +407,6 @@ class Truck:
         drone.en_route = False
         drone.on_truck = True
         drone.is_delivering = False
-
-
-
-    # def assign_packages_to_drones(self):
-    #     packages_per_drone = int(len(self.packages) / self.no_of_drones) 
-    #     for i, drone in enumerate(self.drones):
-    #         for package in self.packages[packages_per_drone*i:packages_per_drone * (i + 1)]:
-    #             drone.schedule_package(package)
-        
-    #     for i in range(len(self.packages) % self.no_of_drones):
-    #         self.drones[0].schedule_package(self.packages[len(self.packages) - i - 1])
         
     
 class Warehouse:
@@ -479,18 +449,6 @@ class Warehouse:
         
         no_trucks = len(trucks)
 
-
-        # for i in range(no_clusters):
-        #     trucks[int(i/2)].add_cluster_centroid(centroids[i])
-
-        # for cluster_label, customer in zip(cluster_labels, customers):
-        #     customer.colour = colours[cluster_label]
-        #     for package in customer.packages:
-        #         truck_idx = int(cluster_label / 2)
-        #         trucks[truck_idx].load_package(package, tuple(centroids[cluster_label]))
-
-        #Uniformly distribute the cluster centroids among the trucks
-
         no_buckets = int(no_clusters / no_trucks)
 
         for i in range(no_clusters):
@@ -512,10 +470,6 @@ class Warehouse:
         #Here we sort the packages in each truck based on the distance from the cluster centroid (Descending)
         for truck in trucks:
             truck.sort_packages()
-
-        
-
-        
 
         
 

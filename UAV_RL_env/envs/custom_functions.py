@@ -31,7 +31,7 @@ class custom_class(gym.Env):
         super(custom_class, self).__init__()
 
         #Warehouse initialization
-        self.warehouse_position = celes.Position(30, 30)
+        self.warehouse_position = celes.Position(width/2, height/2)
         self.warehouse = celes.Warehouse(self.warehouse_position)
 
         #Customer initialization
@@ -44,12 +44,10 @@ class custom_class(gym.Env):
         #Truck and drone initialization
         self.no_trucks = no_trucks
         self.trucks = []
-        self.truck_positions = []
         
         self.no_drones = no_drones
         self.drones = []
 
-        self.packages = []
         
 
         #For clustering
@@ -63,10 +61,11 @@ class custom_class(gym.Env):
 
 
     def step(self, actions):
+
+        #actions is a list containing two elements; a list of truck actions and a list of drone actions
+        #for each truck and drone respectively
         
-        
-        #TODO incorporate truck actions into this
-        #For now truck actions will just be order to move the truck in a certain direction or to launch a drone
+        #For now trucks either move towards a certain position or just stay still
         truck_actions = actions[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
             self._take_truck_action(truck, truck_action[0], truck_action[1])
@@ -77,37 +76,14 @@ class custom_class(gym.Env):
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
-        #Observation for a single drone is:
-            # a. Battery life
-            # b. Number of packages + (customer locations)
-            # c. Home truck
 
-
-        #Battery life observation for each drone
-
-        battery_lives = []
-        for drone in self.drones:
-            battery_lives.append(drone.battery)
-
-        #TODO Number of packages observation
-
-        #Home truck observation for each drone
-        home_trucks = []
-        
-        for drone in self.drones:
-            home_trucks.append(drone.home_truck)
+        #Now the observations
+        #For now just make the observation be the list of trucks, drones and remaining customers
                 
-        drone_positions = []
-        for drone in self.drones:
-            drone_positions.append(drone.position)
-
-        truck_positions = []
-        for truck in self.trucks:
-            truck_positions.append(truck.position)
-        
         truck_observation = (self.trucks,)
         drone_observation = (self.drones,)
-        observation = (truck_observation, drone_observation)
+
+        observation = (truck_observation, drone_observation, self.customers)
 
         #Info will be some debugging info
         info = []
@@ -124,17 +100,12 @@ class custom_class(gym.Env):
         #Return reward, observation, done, info
         return observation, -1, self.done, info
 
-    #TODO make this consistent wit everything else. Mainly the step function.
     def reset(self):
-
-
 
         #Customer initialization
         self.customers = []
         self.customer_positions = []
         
-        #TODO figure out if customers can have multiple packages delivered to them
-        self.packages = []
         for _ in range(self.no_customers):
 
             x = np.random.randint(1, width)
@@ -153,29 +124,24 @@ class custom_class(gym.Env):
             for _ in range(no_of_packages):
                 package = celes.Package(customer)
                 customer.add_package(package)
-                self.packages.append(package)
 
             self.customers.append(customer)
 
         #Truck and drone initialization
         self.trucks = []
-        self.truck_positions = []
-        
         self.drones = []
 
         
 
         for i in range(self.no_trucks):
-            #For now all trucks and drones start at position (10, 10). We will need to change this
-            #in the future when we introduce varying warehouse position, and multiple warehouses
+
             x = self.warehouse_position.x
             y = self.warehouse_position.y
             position = celes.Position(x, y)
-            self.truck_positions.append(position)
             
             truck = celes.Truck(position, truck_id=i, total_no_drones = self.no_drones)
 
-            for j in range(self.no_drones):
+            for _ in range(self.no_drones):
                 drone = celes.Drone(celes.Position(x, y))
                 drone.home_truck = truck
                 truck.load_drone(drone)
@@ -186,10 +152,6 @@ class custom_class(gym.Env):
         
         #cluster customers, and distribute packages accordingly
         self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
-        
-
-        # for truck in self.trucks:
-        #     truck.assign_packages_to_drones()
         
 
 
@@ -207,9 +169,9 @@ class custom_class(gym.Env):
 
         truck_x =[]
         truck_y =[]
-        for position in self.truck_positions:
-            truck_x.append(position.x)
-            truck_y.append(position.y)
+        for truck in self.trucks:
+            truck_x.append(truck.position.x)
+            truck_y.append(truck.position.y)
         
         
         drone_x =[]
@@ -233,7 +195,6 @@ class custom_class(gym.Env):
 
         
        
-        #If we just want to show the graph instead of saving it, uncomment this
         plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
         plt.xlim(-10, width)
         plt.ylim(-10, height)
@@ -266,7 +227,9 @@ class custom_class(gym.Env):
         #but we'll keep it the way it is now for better readability
 
         drone.charge()
-        if action == "go_to_position":
+        if action == 'nothing':
+            pass
+        elif action == "go_to_position":
             drone.go_to_position(action[1])
         elif action == "return_to_home_truck":
             drone.go_to_home_truck()
@@ -280,7 +243,9 @@ class custom_class(gym.Env):
 
     def _take_truck_action(self, truck, action, position):
         #For now action is a 2-tuple that tells the truck where to go to
-        if action == "go_to_next_cluster":
+        if action == 'nothing':
+            pass
+        elif action == "go_to_next_cluster":
             truck.go_to_next_cluster()
     
 

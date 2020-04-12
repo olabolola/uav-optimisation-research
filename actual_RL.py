@@ -5,7 +5,7 @@ import gym
 env_dict = gym.envs.registration.registry.env_specs.copy()
 for env in env_dict:
      if 'HDS' in env:
-          print('Remove {} from registry'.format(env))
+        #   print('Remove {} from registry'.format(env))
           del gym.envs.registration.registry.env_specs[env]
 
 import UAV_RL_env
@@ -32,7 +32,6 @@ drone_actions = []
 for i in range(no_trucks):
     truck_actions.append(("go_to_next_cluster", None))
     drone_actions.append([])
-# print(drone_actions)
 
 for i in range(no_trucks):
     for _ in range(no_drones):
