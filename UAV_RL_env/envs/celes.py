@@ -6,7 +6,7 @@ class Drone:
     def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  2, drone_speed = 2, battery = 100, drone_id = None):
         
         self.position = position
-        self.loading_capacity = loading_capacity
+        self.loading_capacity = loading_capacity    
 
         #Drone cost is defined as the amount of battery consumed per unit of drone_speed distance crossed
         self.cost = cost
@@ -87,6 +87,13 @@ class Drone:
             self.battery = 0
         else:
             self.battery -= self.cost  
+    
+    def steadystate_consumption(self):
+        if self.battery - self.cost/4 < 0:
+            self.battery = 0
+        else:
+            self.battery -= self.cost/4 
+
 
         
 
@@ -275,21 +282,20 @@ class Truck:
             self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : get_euclidean_distance(x.customer.position, cluster_position), reverse=True)
         
     def load_drone_package(self, drone):
-        #TODO make this more smart
-        #For now just assign package furthest away
 
-        no_extra_packages = 2   
-        #Here we deliver the next closest to from the package we are delivering
-        #We always load the first package
-        if len(self.packages[self.current_cluster]) > 0:
-                package_to_deliver = self.packages[self.current_cluster][0]
-                self.packages[self.current_cluster].remove(package_to_deliver)
-                self.no_packages -= 1
 
-                drone.packages.append(package_to_deliver)
-                drone.no_packages += 1
+        no_packages_to_load = 2
 
-        for _ in range(no_extra_packages):
+        for _ in range(no_packages_to_load):
+
+            if drone.no_packages == 0:
+                if len(self.packages[self.current_cluster]) > 0:
+                    package_to_deliver = self.packages[self.current_cluster][0]
+                    self.packages[self.current_cluster].remove(package_to_deliver)
+                    self.no_packages -= 1
+
+                    drone.packages.append(package_to_deliver)
+                    drone.no_packages += 1
 
             if len(self.packages[self.current_cluster]) > 0:
                 package_to_deliver = self.packages[self.current_cluster][-1]
@@ -426,7 +432,7 @@ class Warehouse:
             'y' : customer_y
         })
 
-        kmeans = KMeans(n_clusters = no_clusters)
+        kmeans = KMeans(n_clusters = no_clusters, random_state=42)
         cluster_labels = kmeans.fit_predict(df)
         
         centroids = kmeans.cluster_centers_

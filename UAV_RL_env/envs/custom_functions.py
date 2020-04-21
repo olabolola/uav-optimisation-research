@@ -19,10 +19,13 @@ height = 100
 class custom_class(gym.Env):
     
 
-    def __init__(self, no_customers, no_trucks, no_drones, no_clusters):
+    def __init__(self, no_customers, no_trucks, no_drones, no_clusters, file_suffix, p):
 
         #For making the video
         self.i = 0
+
+        #For saving to a file
+        self.file_suffix = file_suffix
 
         #Number of clusters
         self.no_clusters = no_clusters
@@ -38,6 +41,9 @@ class custom_class(gym.Env):
         self.no_customers = no_customers
         self.customers = []
         self.customer_positions = []
+
+        #Probability distribution for the packages
+        self.p = p
         
         
 
@@ -117,10 +123,9 @@ class custom_class(gym.Env):
                 position = celes.Position(x, y)
             self.customer_positions.append(position)
             customer = celes.Customer(position, 'apt')
-            #For now each customer has a random number of packages between 1 and 5.
-            #50% 1, 30% 2, 10% 3, 5% 4, 5% 5.
-            # no_of_packages = 1
-            no_of_packages = np.random.choice(np.arange(1, 6), p = [0.5, 0.3, 0.1, 0.05, 0.05])
+            
+            #Packages are distributed between customer according to the distribution p.            
+            no_of_packages = np.random.choice(np.arange(1, len(self.p) + 1), p = self.p)
             for _ in range(no_of_packages):
                 package = celes.Package(customer)
                 customer.add_package(package)
@@ -152,7 +157,18 @@ class custom_class(gym.Env):
         
         #cluster customers, and distribute packages accordingly
         self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
-        
+
+
+        #Here we save the state of our system
+        with open('saved_states/saved_state' + str(self.file_suffix) + '.txt', 'w') as f:
+            f.write('Height: ' + str(height))
+            f.write('\nWidth: ' + str(width))
+            f.write('\nNumber of customers: ' + str(self.no_customers))
+            f.write('\nNumber of trucks: ' + str(self.no_trucks))
+            f.write('\nNumber of drones per truck: ' + str(self.no_drones))
+            f.write('\nCustomer positions and packages:\n')
+            for customer in self.customers:
+                f.write(str(customer.position) + ', ' + str(customer.no_of_packages) + '\n')
 
 
     def render(self, mode='human', close=False):
@@ -227,6 +243,7 @@ class custom_class(gym.Env):
         #but we'll keep it the way it is now for better readability
 
         drone.charge()
+        drone.steadystate_consumption()
         if action == 'nothing':
             pass
         elif action == "go_to_position":
