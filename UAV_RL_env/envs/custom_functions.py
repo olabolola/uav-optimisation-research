@@ -123,7 +123,7 @@ class custom_class(gym.Env):
                 position = celes.Position(x, y)
             self.customer_positions.append(position)
             customer = celes.Customer(position, 'apt')
-            
+
             #Packages are distributed between customer according to the distribution p.            
             no_of_packages = np.random.choice(np.arange(1, len(self.p) + 1), p = self.p)
             for _ in range(no_of_packages):
@@ -217,15 +217,6 @@ class custom_class(gym.Env):
         
         plt.show()
 
-        #This here is to save the plots we make, so we can make them
-        #into a video later
-
-        # plt.savefig(f'images/hind{self.i}.png')
-        # self.i += 1
-        # plt.clf()
-
-        #Trying the new animation technique
-        # return plt.imshow()
     
 
 

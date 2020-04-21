@@ -66,7 +66,6 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
             break
 
         
-    # helper_functions.make_video()
 
 #Number of times we want to create a different scenario and run it
 no_runs = 1
