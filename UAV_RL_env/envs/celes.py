@@ -1,12 +1,18 @@
 from sklearn.cluster import KMeans
 import pandas as pd
+import numpy as np
+import random
+
+random.seed(42)
+
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, loading_capacity = 100, cost =  2, drone_speed = 2, battery = 100, drone_id = None):
+    def __init__(self, position, home_truck = None, cost =  2, drone_speed = 2, battery = 100, drone_id = None, capacity = 2):
         
+        self.capacity = capacity
+
         self.position = position
-        self.loading_capacity = loading_capacity    
 
         #Drone cost is defined as the amount of battery consumed per unit of drone_speed distance crossed
         self.cost = cost
@@ -112,6 +118,7 @@ class Drone:
             customer_position = self.packages[-1].customer.position
 
             #TODO update this to incorporate all the customers in the run
+            
             distance = get_euclidean_distance(self.position, customer_position)
 
             arrived = False
@@ -120,18 +127,31 @@ class Drone:
                 self.home_truck.no_drones -= 1
 
                 arrived = self.go_to_position(customer_position)
+
             elif not self.on_truck:
                 arrived = self.go_to_position(customer_position)
 
+            #This allows us to deliver all the packages at once if we arrive at a certain customer
             if arrived:
-                if self.packages[-1].customer.no_of_packages == 1:
-                    customers.remove(self.packages[-1].customer)
-                    self.packages[-1].customer.no_of_packages -= 1
-                else:
-                    self.packages[-1].customer.no_of_packages -= 1
+                for package in self.packages:
+                    if package.customer.position.x == customer_position.x and package.customer.position.y == customer_position.y:
+                        self.packages.remove(package)
+                        self.no_packages -= 1
+                        package.customer.no_of_packages -= 1
+                        if package.customer.no_of_packages == 0:
+                            customers.remove(package.customer)
+                        
 
-                self.packages.pop()
-                self.no_packages -= 1
+            # if arrived:
+            #     if self.packages[-1].customer.no_of_packages == 1:
+            #         customers.remove(self.packages[-1].customer)
+            #         self.packages[-1].customer.no_of_packages -= 1
+            #     else:
+            #         self.packages[-1].customer.no_of_packages -= 1
+
+            #     self.packages.pop()
+            #     self.no_packages -= 1
+
         #If we have no more packages, go back to the home truck
         else:
 
@@ -146,11 +166,6 @@ class Drone:
                 self.battery += self.charge_increase
             else:
                 self.battery = 100
-
-    def get_drone_info(self):
-        d = {'drone_position' : self.position, 'loading_capacity' : self.loading_capacity, 'cost' : self.cost,
-        'drone_speed' : self.drone_speed, 'battery' : self.battery, 'drone_id' : self.drone_id}
-        return d
 
 class Package:
 
@@ -240,8 +255,13 @@ class Truck:
     
     no_of_drones = 0
     #We might just want to inherit from a superclass...
-    def __init__(self, position, cost = 5, truck_speed = 5, truck_id = None, max_package_capacity = 20, total_no_drones = 0):
+    def __init__(self, position, cost = 5, truck_speed = 5, truck_id = None, max_package_capacity = 20, total_no_drones = 0, strategy = 'next_closest'):
         
+
+        #Strategy parameters
+        self.strategy = strategy
+
+
         self.cost = cost
         self.truck_speed = truck_speed
         self.position = position
@@ -284,31 +304,44 @@ class Truck:
     def load_drone_package(self, drone):
 
 
-        no_packages_to_load = 2
+        no_packages_to_load = drone.capacity
+        if self.strategy == 'next_closest':
 
-        for _ in range(no_packages_to_load):
+            for _ in range(no_packages_to_load):
 
-            if drone.no_packages == 0:
+                if drone.no_packages == 0:
+                    if len(self.packages[self.current_cluster]) > 0:
+                        package_to_deliver = self.packages[self.current_cluster][0]
+                        self.packages[self.current_cluster].remove(package_to_deliver)
+                        self.no_packages -= 1
+
+                        drone.packages.append(package_to_deliver)
+                        drone.no_packages += 1
+
                 if len(self.packages[self.current_cluster]) > 0:
-                    package_to_deliver = self.packages[self.current_cluster][0]
+                    package_to_deliver = self.packages[self.current_cluster][-1]
+                    min_distance = get_euclidean_distance(package_to_deliver.customer.position, drone.packages[-1].customer.position)
+                    for package in self.packages[self.current_cluster]:
+                        if get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position) < min_distance:
+                            min_distance = get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position)
+                            package_to_deliver = package
+                    self.packages[self.current_cluster].remove(package_to_deliver)
+                    self.no_packages -= 1
+
+                    drone.packages.append(package_to_deliver)
+                    drone.no_packages += 1
+        #Random strategy mean just select no_packages_to_load random packages from the cluster
+        #and load then onto the drone
+        elif self.strategy == 'random':
+            for _ in range(no_packages_to_load):
+                if len(self.packages[self.current_cluster]) > 0:
+                    package_to_deliver = random.choice(self.packages[self.current_cluster])
                     self.packages[self.current_cluster].remove(package_to_deliver)
                     self.no_packages -= 1
 
                     drone.packages.append(package_to_deliver)
                     drone.no_packages += 1
 
-            if len(self.packages[self.current_cluster]) > 0:
-                package_to_deliver = self.packages[self.current_cluster][-1]
-                min_distance = get_euclidean_distance(package_to_deliver.customer.position, drone.packages[-1].customer.position)
-                for package in self.packages[self.current_cluster]:
-                    if get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position) < min_distance:
-                        min_distance = get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position)
-                        package_to_deliver = package
-                self.packages[self.current_cluster].remove(package_to_deliver)
-                self.no_packages -= 1
-
-                drone.packages.append(package_to_deliver)
-                drone.no_packages += 1
 
     def add_cluster_centroid(self, pos):
         self.cluster_centroids.append(tuple(pos))

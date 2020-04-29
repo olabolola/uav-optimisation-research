@@ -19,8 +19,20 @@ height = 100
 class custom_class(gym.Env):
     
 
-    def __init__(self, no_customers, no_trucks, no_drones, no_clusters, file_suffix, p):
+    def __init__(self, no_customers, no_trucks, no_drones, no_clusters, file_suffix, p, load, load_file, strategy, save_state, drone_capacity):
+        
 
+        #Indicates if we want to save our run or not
+        self.save_state = save_state
+
+        #Strategy parameters for all trucks
+        self.strategy = strategy
+
+
+        #For loading from a file
+        #load is a boolean that indicates whether or not we want to load from a file or not
+        self.load = load
+        self.load_file = load_file
         #For making the video
         self.i = 0
 
@@ -53,6 +65,8 @@ class custom_class(gym.Env):
         
         self.no_drones = no_drones
         self.drones = []
+        #Number of packages our drone can carry
+        self.drone_capacity = drone_capacity
 
         
 
@@ -93,10 +107,6 @@ class custom_class(gym.Env):
 
         #Info will be some debugging info
         info = []
-        for truck in self.trucks:
-            info.append(truck.get_truck_info())
-        for drone in self.drones:
-            info.append(drone.get_drone_info())
         
         #Check if we are done
         if len(self.customers) == 0:
@@ -106,11 +116,70 @@ class custom_class(gym.Env):
         #Return reward, observation, done, info
         return observation, -1, self.done, info
 
+    def load_from_file(self):
+        lines = open(self.load_file).readlines()
+        self.no_customers = int(lines[2].split(': ')[-1])
+        self.no_trucks = int(lines[3].split(': ')[-1])
+        self.no_drones = int(lines[4].split(': ')[-1])
+        self.no_clusters = int(lines[5].split(': ')[-1])
+
+        for i in range(self.no_trucks):
+
+            x = self.warehouse_position.x
+            y = self.warehouse_position.y
+            position = celes.Position(x, y)
+            
+            truck = celes.Truck(position, truck_id=i, total_no_drones = self.no_drones, strategy = self.strategy)
+
+            for _ in range(self.no_drones):
+                drone = celes.Drone(celes.Position(x, y), capacity = self.drone_capacity)
+                drone.home_truck = truck
+                truck.load_drone(drone)
+                self.drones.append(drone)
+                
+            self.trucks.append(truck)
+        
+        
+
+
+
+        for line in lines[7:]:
+            x_coord, y_coord, no_packages = line.split(', ')
+            x_coord = int(x_coord)
+            y_coord = int(y_coord)
+            no_packages = int(no_packages)
+            customer_position = celes.Position(x_coord, y_coord)
+            customer = celes.Customer(customer_position, 'apt')
+
+            
+            for _ in range(no_packages):
+                package = celes.Package(customer)
+                customer.add_package(package)
+            self.customers.append(customer)
+
+        #cluster customers, and distribute packages accordingly
+        self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
+
+
+
+
     def reset(self):
 
-        #Customer initialization
+        #Initialization
         self.customers = []
         self.customer_positions = []
+
+        self.trucks = []
+        self.drones = []
+
+        #First check if we want to load from a file
+        if self.load:
+            self.load_from_file()
+            return
+
+
+        #Customer initialization
+
         
         for _ in range(self.no_customers):
 
@@ -133,9 +202,6 @@ class custom_class(gym.Env):
             self.customers.append(customer)
 
         #Truck and drone initialization
-        self.trucks = []
-        self.drones = []
-
         
 
         for i in range(self.no_trucks):
@@ -144,11 +210,12 @@ class custom_class(gym.Env):
             y = self.warehouse_position.y
             position = celes.Position(x, y)
             
-            truck = celes.Truck(position, truck_id=i, total_no_drones = self.no_drones)
+            truck = celes.Truck(position, truck_id=i, total_no_drones = self.no_drones, strategy = self.strategy)
 
             for _ in range(self.no_drones):
-                drone = celes.Drone(celes.Position(x, y))
+                drone = celes.Drone(celes.Position(x, y), capacity=self.drone_capacity)
                 drone.home_truck = truck
+                
                 truck.load_drone(drone)
                 self.drones.append(drone)
                 
@@ -157,18 +224,21 @@ class custom_class(gym.Env):
         
         #cluster customers, and distribute packages accordingly
         self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
-
-
+        
+        
         #Here we save the state of our system
-        with open('saved_states/saved_state' + str(self.file_suffix) + '.txt', 'w') as f:
-            f.write('Height: ' + str(height))
-            f.write('\nWidth: ' + str(width))
-            f.write('\nNumber of customers: ' + str(self.no_customers))
-            f.write('\nNumber of trucks: ' + str(self.no_trucks))
-            f.write('\nNumber of drones per truck: ' + str(self.no_drones))
-            f.write('\nCustomer positions and packages:\n')
-            for customer in self.customers:
-                f.write(str(customer.position) + ', ' + str(customer.no_of_packages) + '\n')
+        if self.save_state:
+            
+            with open('saved_states/saved_state' + str(self.file_suffix) + '.txt', 'w') as f:
+                f.write('Height: ' + str(height))
+                f.write('\nWidth: ' + str(width))
+                f.write('\nNumber of customers: ' + str(self.no_customers))
+                f.write('\nNumber of trucks: ' + str(self.no_trucks))
+                f.write('\nNumber of drones per truck: ' + str(self.no_drones))
+                f.write('\nNumber of clusters: ' + str(self.no_clusters))
+                f.write('\nCustomer positions and packages:\n')
+                for customer in self.customers:
+                    f.write(str(customer.position) + ', ' + str(customer.no_of_packages) + '\n')
 
 
     def render(self, mode='human', close=False):
