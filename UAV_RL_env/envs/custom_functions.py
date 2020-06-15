@@ -13,8 +13,8 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-width = 100
-height = 100
+width = 300
+height = 300
 
 class custom_class(gym.Env):
     
@@ -42,7 +42,6 @@ class custom_class(gym.Env):
         #Number of clusters
         self.no_clusters = no_clusters
         
-        #no_drones is the number of drones per truck
         super().__init__()
 
         #Warehouse initialization
@@ -324,7 +323,9 @@ class custom_class(gym.Env):
         if action == 'nothing':
             pass
         elif action == "go_to_next_cluster":
+            
             truck.go_to_next_cluster()
+
     
 
     

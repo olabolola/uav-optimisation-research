@@ -13,6 +13,18 @@ import UAV_RL_env
 import numpy as np
 import UAV_RL_env.envs.celes as celes
 import numpy as np
+import random
+random.seed(42)
+
+def save_result(i, strategy, steps):
+
+    if i == 0:
+        with open('results/result_' + strategy + '.txt', 'w') as f:
+            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
+    else:
+        with open('results/result_' + strategy + '.txt', 'a') as f:
+            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
+
 
 def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_customers = 60, p = [1], load = False, load_file = None, strategy = 'next_closest', save_state=False, drone_capacity = 2):
 
@@ -62,68 +74,47 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
         
 
 #Number of times we want to create a different scenario and run it
-no_runs = 20
+no_runs = 10
 
 #Different parameters for our run
-no_trucks = 10
+no_trucks = 5
 no_clusters = 15
 no_drones = 3
-no_customers = 100
-drone_capacity = 3
+no_customers = 500
+drone_capacity = 2
 
-
-#Package distribution
-#The maximum number of packages a customer can order is the length of the list
-#If the list p = [0.6, 0.2, 0.1, 0.05, 0.05], then the customer has a 0.6 chance to get 1 package, 0.2 chance to get 2 packages
-#and so on. Note that sum(p) = 1.
-#Probability distribution for each number of packages
-
-
-#I want to try running a 20 scenarios with the 'next_closest strategy, then trying the same 20 
-#scenarios with the 'random' strategy and comapring the number of steps
-p = [0.5, 0.3, 0.1, 0.1]
+#I want to try running no_runs scenarios with the 'next_closest' strategy, then trying the same no_runs 
+#scenarios with the 'random' strategy and compare the number of steps
+p = [0.4, 0.4, 0.1, 0.1]
 
 #This is the directory where our saved states are saved
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
 
-#First thing to show amjed and hind
-#Do this 3 times
+
+
+
 # for i in range(20):
-#     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='next_closest', save_state=True, drone_capacity = drone_capacity)
-
-#Second thing to show amjed and hind
-#SHOW THEM THE FORMAT
-#Loading from a file
-# filename = path + 'saved_state0.txt'
-# run_env(0, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy='next_closest', save_state=False, drone_capacity = drone_capacity)
+#     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='closest_package_first', save_state=True, drone_capacity = drone_capacity)
 
 
-
-
-
-#Last thing to show amjed and hind
-#Note that you must delete the previous result file otherwise we will just append to it
+strategy = 'next_closest'
 for i in range(no_runs):
 
-    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='next_closest', save_state=True, drone_capacity = drone_capacity)
+    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy=strategy, save_state=True, drone_capacity = drone_capacity)
+    save_result(i, strategy, steps)
 
-    if 'result_next_closest.txt' in os.listdir('results'):
-        with open('results/result_next_closest.txt', 'a') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
-    else:
-        with open('results/result_next_closest.txt', 'w') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
-
+random.seed(42)
+strategy = 'closest_package_first'
 for i in range(no_runs):
 
     filename = path + 'saved_state' + str(i) + '.txt'
-    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy='random', save_state=False, drone_capacity = drone_capacity)
-    # steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, load_file=filename, strategy='random', save_state=False, drone_capacity = drone_capacity)
-    if 'result_random.txt' in os.listdir('results'):
-        with open('results/result_random.txt', 'a') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
-    else:
-        with open('results/result_random.txt', 'w') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
+    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+    save_result(i, strategy, steps)
 
+random.seed(42)
+strategy = 'random'
+for i in range(no_runs):
 
+    filename = path + 'saved_state' + str(i) + '.txt'
+    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+    save_result(i, strategy, steps)
