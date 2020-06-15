@@ -65,10 +65,10 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
 no_runs = 20
 
 #Different parameters for our run
-no_trucks = 3
-no_clusters = 7
+no_trucks = 10
+no_clusters = 15
 no_drones = 3
-no_customers = 200
+no_customers = 100
 drone_capacity = 3
 
 
@@ -81,14 +81,14 @@ drone_capacity = 3
 
 #I want to try running a 20 scenarios with the 'next_closest strategy, then trying the same 20 
 #scenarios with the 'random' strategy and comapring the number of steps
-p = [0.5, 0.4, 0.05, 0.05]
+p = [0.5, 0.3, 0.1, 0.1]
 
-#This is teh directory where our saved states are saved
+#This is the directory where our saved states are saved
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
 
 #First thing to show amjed and hind
 #Do this 3 times
-# for i in range(3):
+# for i in range(20):
 #     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='next_closest', save_state=True, drone_capacity = drone_capacity)
 
 #Second thing to show amjed and hind
@@ -118,7 +118,7 @@ for i in range(no_runs):
 
     filename = path + 'saved_state' + str(i) + '.txt'
     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy='random', save_state=False, drone_capacity = drone_capacity)
-    
+    # steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, load_file=filename, strategy='random', save_state=False, drone_capacity = drone_capacity)
     if 'result_random.txt' in os.listdir('results'):
         with open('results/result_random.txt', 'a') as f:
             f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')

@@ -43,7 +43,7 @@ class custom_class(gym.Env):
         self.no_clusters = no_clusters
         
         #no_drones is the number of drones per truck
-        super(custom_class, self).__init__()
+        super().__init__()
 
         #Warehouse initialization
         self.warehouse_position = celes.Position(width/2, height/2)

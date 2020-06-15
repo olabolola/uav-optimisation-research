@@ -8,7 +8,7 @@ random.seed(42)
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, cost =  2, drone_speed = 2, battery = 100, drone_id = None, capacity = 2):
+    def __init__(self, position, home_truck = None, cost =  1, drone_speed = 2, battery = 100, drone_id = None, capacity = 2):
         
         self.capacity = capacity
 
@@ -106,8 +106,8 @@ class Drone:
     def get_range_of_reach(self):
 
         #What is the maximum distance our drone can travel with its current battery level
-
-        return self.battery / (self.cost * self.drone_speed)
+        return float('inf')
+        # return self.battery / (self.cost * self.drone_speed)
 
     def deliver_next_package(self, customers):
         
@@ -119,11 +119,15 @@ class Drone:
 
             #TODO update this to incorporate all the customers in the run
             
-            distance = get_euclidean_distance(self.position, customer_position)
+            # distance = get_euclidean_distance(self.position, customer_position)
+            distance = get_euclidean_distance(self.position, self.packages[0].customer.position)
+
+            for i in range(1, len(self.packages)):
+                distance += get_euclidean_distance(self.packages[i - 1].customer.position, self.packages[i].customer.position)
 
             arrived = False
 
-            if self.on_truck and distance / 2 <= self.get_range_of_reach():
+            if self.on_truck and distance <= self.get_range_of_reach():
                 self.home_truck.no_drones -= 1
 
                 arrived = self.go_to_position(customer_position)
@@ -141,17 +145,6 @@ class Drone:
                         if package.customer.no_of_packages == 0:
                             customers.remove(package.customer)
                         
-
-            # if arrived:
-            #     if self.packages[-1].customer.no_of_packages == 1:
-            #         customers.remove(self.packages[-1].customer)
-            #         self.packages[-1].customer.no_of_packages -= 1
-            #     else:
-            #         self.packages[-1].customer.no_of_packages -= 1
-
-            #     self.packages.pop()
-            #     self.no_packages -= 1
-
         #If we have no more packages, go back to the home truck
         else:
 
@@ -232,7 +225,7 @@ class Position:
 
 class Customer:
 
-    def __init__(self, position, residence_type, no_of_packages = 0):
+    def __init__(self, position, residence_type, no_of_packages = 1):
         #Location will be a class of type position (defined by x and y)
         self.position = position
         #residence_type will just be a string ("apt" or "house")
@@ -303,7 +296,10 @@ class Truck:
         
     def load_drone_package(self, drone):
 
-
+        #TODO Make this work
+        #This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
+        total_travel_distance = 0
+        
         no_packages_to_load = drone.capacity
         if self.strategy == 'next_closest':
 
@@ -318,7 +314,7 @@ class Truck:
                         drone.packages.append(package_to_deliver)
                         drone.no_packages += 1
 
-                if len(self.packages[self.current_cluster]) > 0:
+                elif len(self.packages[self.current_cluster]) > 0:
                     package_to_deliver = self.packages[self.current_cluster][-1]
                     min_distance = get_euclidean_distance(package_to_deliver.customer.position, drone.packages[-1].customer.position)
                     for package in self.packages[self.current_cluster]:
@@ -335,6 +331,7 @@ class Truck:
         elif self.strategy == 'random':
             for _ in range(no_packages_to_load):
                 if len(self.packages[self.current_cluster]) > 0:
+                    # package_to_deliver = self.packages[self.current_cluster][0]
                     package_to_deliver = random.choice(self.packages[self.current_cluster])
                     self.packages[self.current_cluster].remove(package_to_deliver)
                     self.no_packages -= 1
@@ -408,7 +405,6 @@ class Truck:
             arrived = self.move_towards_position(cluster_position)
 
             if arrived:
-                # self.sort_packages(self.current_cluster.x*self.current_cluster.y)
                 self.cluster_centroids.pop()
         else:
             cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
@@ -434,7 +430,6 @@ class Truck:
         return drones_delivered
 
             
-    #TODO complete this function with all the necessary checks
     def load_drone(self, drone):
 
         drone.position.x = self.position.x
@@ -471,20 +466,30 @@ class Warehouse:
         centroids = kmeans.cluster_centers_
 
         colours = {
-            0 : '#112233',
-            1 : '#00FFFF',
-            2 : '#FF00FF',
-            3 : '#C0C0C0',
-            4 : '#808080',
-            5 : '#800000',
-            6 : '#808000',
-            7 : '#800080',
-            8 : '#008080'
+            0 : '#CD5C5C',
+            1 : '#FFC0CB',
+            2 : '#FFA07A',
+            3 : '#FFD700',
+            4 : '#E6E6FA',
+            5 : '#ADFF2F',
+            6 : '#00FFFF',
+            7 : '#FFF8DC',
+            8 : '#DCDCDC',
+            9 : '#8B0000',
+            10 : '#DB7093',
+            11 : '#FFA500',
+            12 : '#BDB76B',
+            13 : '#7B68EE',
+            14 : '#008080',
+            15 : '#191970',
+            16 : '#800000',
+            17 : '#FFE4E1',
+            18 : '#000000'
         }
         
         #Here we just give all the packages to each truck based on the cluster (not sorted)
 
-        #TODO make this work for any values of no_trucks and no_clusters
+        #TODO make this work for any values of no_trucks and no_clusters (properly)
         
         no_trucks = len(trucks)
 
@@ -493,6 +498,8 @@ class Warehouse:
         for i in range(no_clusters):
             truck_index = int(i / no_buckets) % no_trucks
             trucks[truck_index].add_cluster_centroid(centroids[i]) 
+
+        
 
         for cluster_label, customer in zip(cluster_labels, customers):
             customer.colour = colours[cluster_label]

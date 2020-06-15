@@ -12,10 +12,7 @@ for line in lines_random:
 for line in lines_next_closest:
     steps_next_closest.append(int(line.split('= ')[-1]))
 
-# print(steps_random)
-# print(steps_next_closest)
-
-x = np.arange(20)
+x = np.arange(20) #Same as number of runs
 ax = plt.subplot(111)
 ax.bar(x, steps_random, color='b', align='center', label='random', width=0.4)
 ax.bar(x+0.4, steps_next_closest, color='r', align='center', label = 'next closest', width=0.4)
