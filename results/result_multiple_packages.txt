@@ -1,0 +1,10 @@
+0) Number of steps = 1290
+1) Number of steps = 1324
+2) Number of steps = 1237
+3) Number of steps = 1316
+4) Number of steps = 1303
+5) Number of steps = 1273
+6) Number of steps = 1256
+7) Number of steps = 1249
+8) Number of steps = 1283
+9) Number of steps = 1226

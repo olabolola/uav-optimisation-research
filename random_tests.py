@@ -1,6 +1,3 @@
-import random
-import numpy as np
+import UAV_RL_env.envs.celes as celes
 
-a = [2]
-
-print(np.random.choice(np.array(a), p = [1]))
+print([1]*5)

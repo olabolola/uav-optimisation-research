@@ -13,8 +13,8 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-width = 300
-height = 300
+width = 100
+height = 100
 
 class custom_class(gym.Env):
     
@@ -241,7 +241,6 @@ class custom_class(gym.Env):
 
 
     def render(self, mode='human', close=False):
-        #TODO make this more sophisticated with animations or something
         
         customer_x = []
         customer_y = []
@@ -293,7 +292,6 @@ class custom_class(gym.Env):
 
 
 
-    #TODO do we need this? Or will we take care of everything in step
     def _take_drone_action(self, drone, action):
         # Actions for the drone policy:
             # a. Go back to Home truck --> action = "return_to_home_truck"

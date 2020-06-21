@@ -8,7 +8,7 @@ import random
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, cost =  0.25, drone_speed = 2, battery = 100, drone_id = None, capacity = 2):
+    def __init__(self, position, home_truck = None, cost =  1, drone_speed = 2, battery = 100, drone_id = None, capacity = 2):
         
         self.capacity = capacity
 
@@ -23,7 +23,7 @@ class Drone:
         #Battery is just a number representing the percentage of battery remaining
         self.battery = 100
         #charge_increase is how much charge the battery increases every time step when it is charging
-        self.charge_increase = 5
+        self.charge_increase = 1
         self.drone_id = drone_id
 
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
@@ -63,7 +63,6 @@ class Drone:
 
         #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
         if distance <= self.drone_speed:
-            self.consume_battery()
             if not self.on_truck:
                 self.home_truck.load_drone(self)
         else:            
@@ -80,7 +79,6 @@ class Drone:
         self.en_route = True
         self.on_truck = False
         if distance < self.drone_speed:
-            self.consume_battery()
             self.position.x = position.x
             self.position.y = position.y
             self.en_route = False
@@ -112,8 +110,8 @@ class Drone:
     def get_range_of_reach(self):
 
         #What is the maximum distance our drone can travel with its current battery level
-        # return self.battery / (self.cost * self.drone_speed)
-        return float('inf')
+        return self.battery / (self.cost * self.drone_speed)
+        # return float('inf')
 
     #This function is used to move towards the next customer in the drone's list 
     #If we have no packages left the drone will return to the home truck
@@ -181,14 +179,15 @@ class Position:
         d = {'x' : self.x, 'y': self.y}
         return d
 
-    #TODO find out exactly what __str__ and __repr__ do
-    #and find a way to print a list of position objects (if possible)
 
     def __str__(self):
         return str(self.x) + ", " + str(self.y)  
 
     def __repr__(self):
         return str(self)
+    
+    def __eq__(self, pos):
+        return self.x == pos.x and self.y == pos.y
 
     
     #We are going to define a custom subtraction operation in order to get a point d distance away from 
@@ -199,7 +198,6 @@ class Position:
 
     #This function convert any point/vector into a unit vector
     def _normalize_position(self):
-        #TODO should we use math.sqrt() or ** 0.5?
         norm = (self.x ** 2 + self.y ** 2) ** 0.5
         self.x /= norm
         self.y /= norm
@@ -213,7 +211,6 @@ class Position:
 
 
     def get_point_on_line(self, position2, distance):
-        #TODO check for division by zero
         v = position2 - self
 
         v._normalize_position()
@@ -235,6 +232,9 @@ class Customer:
         self.packages = []
         self.colour = None
 
+        #This tells us how many packages left on the truck
+        self.quasi_no_packages = 0
+
         
 
     def get_customer_info(self):
@@ -245,7 +245,9 @@ class Customer:
 
     def add_package(self, package):
         self.no_of_packages += 1
-        self.packages.append(package)      
+        self.quasi_no_packages += 1
+        self.packages.append(package)   
+
     
 class Truck:
     
@@ -292,15 +294,23 @@ class Truck:
         self.packages[cluster].append(package)
         self.no_packages += 1
 
-    #Here we sort the packages in each cluster according to the distance from the cluster
-    def sort_packages(self):
-        for cluster in self.packages.keys():
-            cluster_position = Position(cluster[0], cluster[1])
-            self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : get_euclidean_distance(x.customer.position, cluster_position), reverse=True)
-        
+
+
+    #Here we sort the packages in each cluster according to the how parameter
+    def sort_packages(self, how):
+        if how == 'distance': #Here we sort the packages according to the distance from the center of the cluster
+            for cluster in self.packages.keys():
+                cluster_position = Position(cluster[0], cluster[1])
+                self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : get_euclidean_distance(x.customer.position, cluster_position), reverse=True)
+        elif how == 'no_packages': #Here we sort the packages according to the number of packages of the customer
+            for cluster in self.packages.keys():
+                self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : (x.customer.quasi_no_packages, x.customer.position.x, x.customer.position.y))
+                 
+
+
+
     def load_drone_package(self, drone):
 
-        #TODO Make this work
         #This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
         total_travel_distance = 0
         
@@ -411,7 +421,77 @@ class Truck:
                     else:
                         break
 
+        elif self.strategy=='multiple_packages':
+                            
+            #sort packages dictionary by number of packages
+            drone.home_truck.sort_packages('no_packages')
 
+            
+            if drone.no_packages==0:
+                if len(self.packages[self.current_cluster])> 0:
+                    p = self.packages[self.current_cluster][-1] 
+                    total_travel_distance += get_euclidean_distance(self.position, p.customer.position)
+                    if total_travel_distance <= drone.get_range_of_reach():
+                            self.packages[self.current_cluster].pop()
+                            self.no_packages -= 1
+
+                            drone.packages.append(p)
+                            drone.no_packages += 1
+
+
+                            #Indicate that we have taken the package from the truck but have not delivered it yet
+                            p.customer.quasi_no_packages -= 1
+                            
+                            while (drone.no_packages < no_packages_to_load) and\
+                                len(self.packages[self.current_cluster]) > 0 and\
+                            (p.customer.position == self.packages[self.current_cluster][-1].customer.position):
+                                p = self.packages[self.current_cluster][-1]
+                                self.packages[self.current_cluster].pop()
+                                self.no_packages -= 1
+
+                                drone.packages.append(p)
+                                drone.no_packages += 1
+
+                                #Indicate that we have taken the package from the truck but have not delivered it yet
+                                p.customer.quasi_no_packages -= 1
+                    else:
+                        return
+                        
+            if len(self.packages[self.current_cluster]) > 0 and drone.no_packages < no_packages_to_load:
+                
+                no_packages_left = no_packages_to_load - drone.no_packages
+
+                for _ in range(no_packages_left):
+
+                    if len(self.packages[self.current_cluster]) > 0:
+
+                        package_to_deliver = self.packages[self.current_cluster][0]
+                        min_distance = get_euclidean_distance(package_to_deliver.customer.position, drone.packages[-1].customer.position)
+                        for package in self.packages[self.current_cluster]:
+                            if get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position) < min_distance:
+                                min_distance = get_euclidean_distance(drone.packages[-1].customer.position, package.customer.position)
+                                package_to_deliver = package
+                        
+                        #Add the distance between the last package we have so far and the package we want to add to the list
+                        total_travel_distance += get_euclidean_distance\
+                        (drone.packages[-1].customer.position, package_to_deliver.customer.position)
+                        
+                        
+                        
+
+                        if total_travel_distance <= drone.get_range_of_reach():
+                            self.packages[self.current_cluster].remove(package_to_deliver)
+                            self.no_packages -= 1
+
+                            drone.packages.append(package_to_deliver)
+                            drone.no_packages += 1
+
+                            #Indicate that we have taken the package from the truck but have not delivered it yet
+                            package.customer.quasi_no_packages -= 1
+                        else:
+                            return
+
+                        
     def add_cluster_centroid(self, pos):
         self.cluster_centroids.append(tuple(pos))
     
@@ -586,10 +666,16 @@ class Warehouse:
         for truck in trucks:
             truck.current_cluster = truck.cluster_centroids[-1]
 
-        #Here we sort the packages in each truck based on the distance from the cluster centroid (Descending)
-        for truck in trucks:
-            truck.sort_packages()
-
+        #According to the strategy we will sort the trucks accordingly
+        #Currently the same strategy is shared by all the trucks
+        if trucks[0].strategy in ('next_closest', 'closest_package_first'):
+            # Here we sort the packages in each truck based on the distance from the cluster centroid (Descending)
+            for truck in trucks:
+                truck.sort_packages('distance')
+        elif trucks[0].strategy == 'multiple_packages':
+            #Here we sort the packages in each truck based on the number of packages the package's customer has
+            for truck in trucks:
+                truck.sort_packages('no_packages')
         
 
 

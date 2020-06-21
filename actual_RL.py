@@ -77,15 +77,15 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
 no_runs = 10
 
 #Different parameters for our run
-no_trucks = 5
-no_clusters = 15
+no_trucks = 1
+no_clusters = 6
 no_drones = 3
-no_customers = 500
-drone_capacity = 2
+no_customers = 300
+drone_capacity = 7
 
 #I want to try running no_runs scenarios with the 'next_closest' strategy, then trying the same no_runs 
 #scenarios with the 'random' strategy and compare the number of steps
-p = [0.4, 0.4, 0.1, 0.1]
+p = [0.15, 0.15, 0.3, 0.3, 0.1]
 
 #This is the directory where our saved states are saved
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
@@ -94,7 +94,7 @@ path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV 
 
 
 # for i in range(20):
-#     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='closest_package_first', save_state=True, drone_capacity = drone_capacity)
+#     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='multiple_packages', save_state=True, drone_capacity = drone_capacity)
 
 
 strategy = 'next_closest'
@@ -103,16 +103,24 @@ for i in range(no_runs):
     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy=strategy, save_state=True, drone_capacity = drone_capacity)
     save_result(i, strategy, steps)
 
-random.seed(42)
-strategy = 'closest_package_first'
-for i in range(no_runs):
+# random.seed(42)
+# strategy = 'closest_package_first'
+# for i in range(no_runs):
 
-    filename = path + 'saved_state' + str(i) + '.txt'
-    steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-    save_result(i, strategy, steps)
+#     filename = path + 'saved_state' + str(i) + '.txt'
+#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+#     save_result(i, strategy, steps)
+
+# random.seed(42)
+# strategy = 'random'
+# for i in range(no_runs):
+
+#     filename = path + 'saved_state' + str(i) + '.txt'
+#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+#     save_result(i, strategy, steps)
 
 random.seed(42)
-strategy = 'random'
+strategy = 'multiple_packages'
 for i in range(no_runs):
 
     filename = path + 'saved_state' + str(i) + '.txt'

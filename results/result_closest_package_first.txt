@@ -1,0 +1,10 @@
+0) Number of steps = 217
+1) Number of steps = 253
+2) Number of steps = 273
+3) Number of steps = 301
+4) Number of steps = 252
+5) Number of steps = 219
+6) Number of steps = 301
+7) Number of steps = 303
+8) Number of steps = 270
+9) Number of steps = 217
