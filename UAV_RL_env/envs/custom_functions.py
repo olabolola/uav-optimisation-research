@@ -14,8 +14,8 @@ except ModuleNotFoundError:
 
 #Width and height of the grid on witch our customers live
 #TODO make this 2000x2000 again
-width = 200
-height = 200
+width = 2000
+height = 2000
 
 class custom_class(gym.Env):
     
@@ -118,7 +118,7 @@ class custom_class(gym.Env):
                 if truck.total_no_drones != truck.no_drones:
                     drones_on_trucks = False
             
-            return drones_on_trucks
+            self.done = drones_on_trucks
 
             
         #Return reward, observation, done, info

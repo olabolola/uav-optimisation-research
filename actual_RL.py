@@ -1,31 +1,32 @@
 import gym
 
-    
 env_dict = gym.envs.registration.registry.env_specs.copy()
 for env in env_dict:
      if 'HDS' in env:
-        #   print('Remove {} from registry'.format(env))
           del gym.envs.registration.registry.env_specs[env]
 
 
+
+import csv
 import os
 import UAV_RL_env
-import numpy as np
 import UAV_RL_env.envs.celes as celes
 import numpy as np
+import numpy as np
 import random
+
+    
 random.seed(42)
 
-
-#This function saves the results of a run in a file
-def save_result(i, strategy, steps):
+def save_result(i, strategy, results):
 
     if i == 0:
         with open('results/result_' + strategy + '.txt', 'w') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
+            f.write('no_steps,drone_travel_distance\n')
+            f.write(str(results[0]) + ',' + str(results[1]) + '\n')
     else:
         with open('results/result_' + strategy + '.txt', 'a') as f:
-            f.write(str(i) + ') Number of steps = ' + str(steps) + '\n')
+            f.write(str(results[0]) + ',' + str(results[1]) + '\n')
 
 
 def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_customers = 60, p = [1], load = False, load_file = None, strategy = 'next_closest', save_state=False, drone_capacity = 2):
@@ -50,10 +51,18 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
     while True:
         obs, reward, done, info = env.step(action)
         steps += 1
-        env.render()
+        # env.render()
 
+        #When we are finished we will return the results of the run
         if done:
-            return steps
+            drone_travel_distance = 0
+            
+            drones = obs[1][0]
+
+            for drone in drones:
+                drone_travel_distance += drone.total_travel_distance
+            
+            return (steps, drone_travel_distance)
 
         
 
@@ -63,9 +72,8 @@ no_runs = 10
 #Different parameters for our run
 no_trucks = 2
 no_drones = 3
-no_customers = 20 #We will test no_customers = 50, 100, 200, 500
-# no_clusters = int(no_customers / 50)
-no_clusters = 4
+no_customers = 200 #We will test no_customers = 50, 100, 200, 500
+no_clusters = int(no_customers / 50)
 drone_capacity = 3 #We will test drone_capacity = 1, 2, 3
 
 #I want to try running no_runs scenarios with the 'next_closest' strategy, then trying the same no_runs 
@@ -76,36 +84,35 @@ p = [0.9, 0.08, 0.02]
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
 
 
-for i in range(5):
-    run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='next_closest', save_state=True, drone_capacity = drone_capacity)
+# for i in range(5):
+#     run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy='next_closest', save_state=True, drone_capacity = drone_capacity)
 
 
-# strategy = 'next_closest'
-# for i in range(no_runs):
+strategy = 'farthest_package_first'
+for i in range(no_runs):
+    steps, drone_travel_distance = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy=strategy, save_state=True, drone_capacity = drone_capacity)
+    save_result(i, strategy, (steps, drone_travel_distance))
 
-#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=False, strategy=strategy, save_state=True, drone_capacity = drone_capacity)
-#     save_result(i, strategy, steps)
+random.seed(42)
+strategy = 'closest_package_first'
+for i in range(no_runs):
 
-# random.seed(42)
-# strategy = 'closest_package_first'
-# for i in range(no_runs):
+   filename = path + 'saved_state' + str(i) + '.txt'
+   steps, drone_travel_distance = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+   save_result(i, strategy, (steps, drone_travel_distance))
 
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, steps)
+#random.seed(42)
+#strategy = 'random_package_first'
+#for i in range(no_runs):
+#
+#    filename = path + 'saved_state' + str(i) + '.txt'
+#    steps, drone_travel_distance = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+#    save_result(i, strategy, (steps, drone_travel_distance))
+#
+random.seed(42)
+strategy = 'most_packages_first'
+for i in range(no_runs):
 
-# random.seed(42)
-# strategy = 'random'
-# for i in range(no_runs):
-
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, steps)
-
-# random.seed(42)
-# strategy = 'multiple_packages'
-# for i in range(no_runs):
-
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, steps)
+   filename = path + 'saved_state' + str(i) + '.txt'
+   steps, drone_travel_distance = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+   save_result(i, strategy, (steps, drone_travel_distance))

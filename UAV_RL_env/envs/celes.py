@@ -8,7 +8,7 @@ import random
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, cost =  0.005, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
+    def __init__(self, position, home_truck = None, cost =  0.006, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
         
         self.capacity = capacity
 
@@ -41,6 +41,9 @@ class Drone:
         #We use this variable to perform a 2 minute delay (120 steps), when unloading the package and giving it to the customer
         self.delay_variable = 0
 
+        #Here we store the total distance travelled by the drone over the course of the run
+        self.total_travel_distance = 0
+
 
     #So far we haven't used this function at all
     def get_package_dropoff_time(self, residence_type):
@@ -66,14 +69,24 @@ class Drone:
 
         #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
         if distance <= self.drone_speed:
+            
+            self.consume_battery(distance)
+
+            #Here we add the distance travelled now to the total distance travelled
+            self.total_travel_distance += distance
+
             if not self.on_truck:
                 self.home_truck.load_drone(self)
         else:            
             self.en_route = True
             self.on_truck = False
             distance_traveled = self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
+            
             self.consume_battery(distance_traveled)
-
+            
+            #Here we add the distance travelled now to the total distance travelled
+            self.total_travel_distance += distance_traveled
+            
 
     #We use this function to move towards a certain position
     #This function returns True is we reach the position and false otherwise
@@ -82,13 +95,28 @@ class Drone:
         self.en_route = True
         self.on_truck = False
         if distance < self.drone_speed:
+
+            self.consume_battery(distance)
+
+            #Here we add the distance travelled now to the total distance travelled
+            self.total_travel_distance += distance
+
+
             self.position.x = position.x
             self.position.y = position.y
             self.en_route = False
+
+
+
             return True
         else:
+
             distance_traveled = self.position.get_point_on_line(position, self.drone_speed)
             self.consume_battery(distance_traveled)
+
+            #Here we add the distance travelled now to the total distance travelled
+            self.total_travel_distance += distance_traveled
+
             return False
         return False   
 
@@ -108,7 +136,7 @@ class Drone:
             self.battery = 0
         else:
             self.battery -= self.cost/4 
-
+        
 
         
     #We use this function to calculate how far we can travel with our current battery charge
@@ -146,9 +174,8 @@ class Drone:
                 #Once we arrive at a customer, we want to perform a 2 minute delay (120 steps)
                 self.delay_variable += 1
 
-                #TODO make this 120 again
                 
-                if self.delay_variable == 1:
+                if self.delay_variable == 120:
                     self.delay_variable = 0
                     
                     #This is one of the packages we are delivering to the customer
@@ -282,7 +309,7 @@ class Truck:
     
     no_of_drones = 0
     #We might just want to inherit from a superclass...
-    def __init__(self, position, cost = 5, truck_speed = 9, truck_id = None, total_no_drones = 0, strategy = 'next_closest'):
+    def __init__(self, position, cost = 5, truck_speed = 90, truck_id = None, total_no_drones = 0, strategy = 'next_closest'):
         
 
         #Strategy parameters
@@ -341,23 +368,23 @@ class Truck:
     def load_drone_package(self, drone):
 
         #This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
-        total_travel_distance = 0
+        total_delivery_distance = 0
         
         no_packages_to_load = drone.capacity
 
 
-        if self.strategy == 'next_closest':
+        if self.strategy == 'farthest_package_first':
 
             for _ in range(no_packages_to_load):
 
                 if drone.no_packages == 0:
                     if len(self.packages[self.current_cluster]) > 0:
                         package_to_deliver = self.packages[self.current_cluster][0]
-                        total_travel_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
+                        total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
 
                         #Check if it is possible to deliver the package with the current charge
                         #If it is possible then load the package
-                        if total_travel_distance * 2 <= drone.get_range_of_reach():
+                        if total_delivery_distance * 2 <= drone.get_range_of_reach():
                             self.packages[self.current_cluster].remove(package_to_deliver)
                             self.no_packages -= 1
 
@@ -375,11 +402,11 @@ class Truck:
                             package_to_deliver = package
                     
                     #Add the distance between the last package we have so far and the package we want to add to the list
-                    total_travel_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
+                    total_delivery_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
                     
                     #Check if it is possible to deliver the package with the current charge
                     #If it is possible then load the package 
-                    if total_travel_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position) <= drone.get_range_of_reach():
+                    if total_delivery_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position) <= drone.get_range_of_reach():
                         self.packages[self.current_cluster].remove(package_to_deliver)
                         self.no_packages -= 1
 
@@ -389,7 +416,7 @@ class Truck:
                         break
         #Random strategy mean just select no_packages_to_load random packages from the cluster
         #and load then onto the drone
-        elif self.strategy == 'random':
+        elif self.strategy == 'random_package_first':
             for _ in range(no_packages_to_load):
                 if len(self.packages[self.current_cluster]) > 0:
                     # package_to_deliver = self.packages[self.current_cluster][0]
@@ -397,13 +424,13 @@ class Truck:
                     
                     #If it is this first package then we want to add the distance from the truck
                     if len(drone.packages) == 0:
-                        total_travel_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
+                        total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
                     else:
                         #If it is not the first package we add the distance from the previous package
-                        total_travel_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
+                        total_delivery_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
 
                     #Check if we are able to deliver the packages with the current drone charge
-                    if total_travel_distance + get_euclidean_distance(package_to_deliver, self.position) <= drone.get_range_of_reach():
+                    if total_delivery_distance + get_euclidean_distance(package_to_deliver.customer.position, self.position) <= drone.get_range_of_reach():
                         self.packages[self.current_cluster].remove(package_to_deliver)
                         self.no_packages -= 1
 
@@ -417,11 +444,11 @@ class Truck:
                 if drone.no_packages == 0:
                     if len(self.packages[self.current_cluster]) > 0:
                         package_to_deliver = self.packages[self.current_cluster][-1]
-                        total_travel_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
+                        total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
 
                         #Check if it is possible to deliver the package with the current charge
                         #If it is possible then load the package
-                        if total_travel_distance * 2 <= drone.get_range_of_reach():
+                        if total_delivery_distance * 2 <= drone.get_range_of_reach():
                             self.packages[self.current_cluster].remove(package_to_deliver)
                             self.no_packages -= 1
 
@@ -439,11 +466,11 @@ class Truck:
                             package_to_deliver = package
                     
                     #Add the distance between the last package we have so far and the package we want to add to the list
-                    total_travel_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
+                    total_delivery_distance += get_euclidean_distance(drone.packages[-1].customer.position, package_to_deliver.customer.position)
                     
                     #Check if it is possible to deliver the package with the current charge
                     #If it is possible then load the package 
-                    if total_travel_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position) <= drone.get_range_of_reach():
+                    if total_delivery_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position) <= drone.get_range_of_reach():
                         self.packages[self.current_cluster].remove(package_to_deliver)
                         self.no_packages -= 1
 
@@ -452,7 +479,7 @@ class Truck:
                     else:
                         break
 
-        elif self.strategy=='multiple_packages':
+        elif self.strategy=='most_packages_first':
                             
             #sort packages dictionary by number of packages
             drone.home_truck.sort_packages('no_packages')
@@ -461,8 +488,8 @@ class Truck:
             if drone.no_packages==0:
                 if len(self.packages[self.current_cluster])> 0:
                     p = self.packages[self.current_cluster][-1] 
-                    total_travel_distance += get_euclidean_distance(self.position, p.customer.position)
-                    if total_travel_distance * 2 <= drone.get_range_of_reach():
+                    total_delivery_distance += get_euclidean_distance(self.position, p.customer.position)
+                    if total_delivery_distance * 2 <= drone.get_range_of_reach():
                             self.packages[self.current_cluster].pop()
                             self.no_packages -= 1
 
@@ -504,13 +531,13 @@ class Truck:
                                 package_to_deliver = package
                         
                         #Add the distance between the last package we have so far and the package we want to add to the list
-                        total_travel_distance += get_euclidean_distance\
+                        total_delivery_distance += get_euclidean_distance\
                         (drone.packages[-1].customer.position, package_to_deliver.customer.position)
                         
                         
                         
 
-                        if total_travel_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position)<= drone.get_range_of_reach():
+                        if total_delivery_distance + get_euclidean_distance(self.position, package_to_deliver.customer.position)<= drone.get_range_of_reach():
                             self.packages[self.current_cluster].remove(package_to_deliver)
                             self.no_packages -= 1
 
@@ -581,7 +608,9 @@ class Truck:
         
 
     def go_to_next_cluster(self):
-
+        
+        # if len(self.cluster_centroids) == 0:
+        #     return
         if len(self.cluster_centroids) > 0 and self.cluster_finished():
             self.current_cluster = self.cluster_centroids[-1]
             cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
