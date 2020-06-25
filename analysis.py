@@ -24,7 +24,7 @@ for line in lines_multiple_packages:
 x = np.arange(len(steps_random)) #Same as number of runs
 ax = plt.subplot(111)
 
-# ax.bar(x+0.4, steps_closest_package_first, color='b', align='center', label='closest_package_first', width=0.2)
+# ax.bar(x+0.4, steps_closest_package_first, color='g', align='center', label='closest_package_first', width=0.2)
 ax.bar(x+0.2, steps_next_closest, color='r', align='center', label = 'next closest', width=0.2)
 # ax.bar(x-0.2, steps_random, color = 'y', align = 'center', label = 'random', width = 0.2)
 ax.bar(x, steps_multiple_packages, color = 'b', align = 'center', label = 'multiple_packages', width = 0.2)

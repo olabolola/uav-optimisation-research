@@ -13,8 +13,9 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-width = 100
-height = 100
+#TODO make this 2000x2000 again
+width = 200
+height = 200
 
 class custom_class(gym.Env):
     
@@ -87,7 +88,7 @@ class custom_class(gym.Env):
         #For now trucks either move towards a certain position or just stay still
         truck_actions = actions[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
-            self._take_truck_action(truck, truck_action[0], truck_action[1])
+            self._take_truck_action(truck, truck_action)
 
         
         #Action will be a list of actions for each drone
@@ -108,8 +109,16 @@ class custom_class(gym.Env):
         info = []
         
         #Check if we are done
+        #First we check if there are no more customers to deliver to
         if len(self.customers) == 0:
-            self.done = True
+
+            #Here we make sure all the drones have returned to their trucks
+            drones_on_trucks = True
+            for truck in self.trucks:
+                if truck.total_no_drones != truck.no_drones:
+                    drones_on_trucks = False
+            
+            return drones_on_trucks
 
             
         #Return reward, observation, done, info
@@ -311,12 +320,14 @@ class custom_class(gym.Env):
         elif action == "deliver_next_package":
             if not drone.home_truck.is_moving:
                 drone.deliver_next_package(self.customers)
+            else:
+                return
         elif action == "failsafe_mode":
             #TODO Do something???
             pass
 
 
-    def _take_truck_action(self, truck, action, position):
+    def _take_truck_action(self, truck, action):
         #For now action is a 2-tuple that tells the truck where to go to
         if action == 'nothing':
             pass
