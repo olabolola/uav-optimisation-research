@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-lines_CPF = open('results/result_closest_package_first_1000_3.txt', 'r').readlines()
-lines_FPF = open('results/result_farthest_package_first_1000_3.txt', 'r').readlines()
-lines_MPF = open('results/result_most_packages_first_1000_3.txt', 'r').readlines()
-lines_FPF_MPA = open('results/result_farthest_package_first_MPA_1000_3.txt', 'r').readlines()
+lines_CPF = open('results/result_closest_package_first_200_3.txt', 'r').readlines()
+lines_FPF = open('results/result_farthest_package_first_200_3.txt', 'r').readlines()
+lines_MPF = open('results/result_most_packages_first_200_3.txt', 'r').readlines()
+lines_FPF_MPA = open('results/result_farthest_package_first_MPA_200_3.txt', 'r').readlines()
 
 
 steps_FPF = []

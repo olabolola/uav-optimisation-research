@@ -1,4 +1,10 @@
+import matplotlib.pyplot as plt
+
+import numpy as np
 
 
-a = [1, 2, 3]
-print(sum(a) / len(a))
+x = np.arange(3)
+
+plt.bar(x, [1, 2, 3])
+
+plt.show()
