@@ -47,6 +47,8 @@ class Drone:
         #Here we store the total time where the drone is active
         self.total_active_time = 0
 
+        
+
 
     #So far we haven't used this function at all
     def get_package_dropoff_time(self, residence_type):
@@ -674,8 +676,8 @@ class Truck:
 
     def go_to_next_cluster(self):
         
-        # if len(self.cluster_centroids) == 0:
-        #     return
+
+
         if len(self.cluster_centroids) > 0 and self.cluster_finished():
             self.current_cluster = self.cluster_centroids[-1]
             cluster_position = Position(self.current_cluster[0], self.current_cluster[1])

@@ -74,7 +74,10 @@ class custom_class(gym.Env):
         self.centroids = None
 
         #Check if we have finished delivering all the packages
-        self.done = False
+        #We have two types of doness.
+        # 1) When the trucks return to the warehouse
+        # 2) When all the packages are delivered 
+        self.done = [False, False]
 
 
 
@@ -111,6 +114,8 @@ class custom_class(gym.Env):
         #Check if we are done
         #First we check if there are no more customers to deliver to
         if len(self.customers) == 0:
+            
+            self.done[1] = True
 
             #Here we make sure all the drones have returned to their trucks
             drones_on_trucks = True
@@ -118,7 +123,7 @@ class custom_class(gym.Env):
                 if truck.total_no_drones != truck.no_drones:
                     drones_on_trucks = False
             
-            self.done = drones_on_trucks
+            self.done[0] = drones_on_trucks
 
             
         #Return reward, observation, done, info

@@ -23,7 +23,7 @@ def save_result(scenario_id, strategy, results, information):
     
     with open('results/results.txt', 'a') as f:
 
-        print_string = strategy + ',' + str(scenario_id) + ',' + str(information[0]) + ',' + str(information[1]) + ',' + str(results[0]) + ',' + str(results[1]) + ',' + str(results[2]) + '\n'
+        print_string = strategy + ',' + str(scenario_id) + ',' + str(information[0]) + ',' + str(information[1]) + ',' + str(results[0]) + ',' + str(results[1]) + ',' + str(results[2]) + str(results[3]) + '\n'
         f.write(print_string)
 
 def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_customers = 60, p = [1], load = False, load_file = None, strategy = 'next_closest', save_state=False, drone_capacity = 2):
@@ -43,15 +43,32 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
             drone_actions.append("deliver_next_package")
 
     action = (truck_actions, drone_actions)
-    steps = 0
-    
+
+
+    total_time = 0 #Here we store the number of steps for the trucks to return to the warehouse
+    A = 0 #Here we stpre the number of steps until all packages are delivered
+
+    # steps[0] will store the total time, while steps[1] will store the time it takes 
+    steps = [0, 0]
+
     while True:
+
         obs, reward, done, info = env.step(action)
-        steps += 1
+        total_time += 1
+        
+        #If we haven't delivered all packages then keep on counting A
+        if not done[1]:
+            A += 1
+
         # env.render()
 
-        #When we are finished we will return the results of the run
-        if done:
+        #When we are finished (trucks return to warehouse) we will return the results of the run
+        if done[0]:
+            
+            #After the simulation is over store the total number of steps and A
+            steps[0] = total_time
+            steps[1] = A
+
             drone_travel_distance = 0
             drone_active_time = 0
             
@@ -61,7 +78,7 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
                 drone_travel_distance += drone.total_travel_distance
                 drone_active_time += drone.total_active_time
 
-            utilization = drone_active_time / (steps * no_trucks * no_drones)
+            utilization = drone_active_time / (steps[0] * no_trucks * no_drones)
             
             return (steps, drone_travel_distance, utilization)
 
@@ -92,7 +109,7 @@ path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV 
 #Before we begin the simulation we want to initialize the csv file which will store the results
 
 with open('results/results.txt', 'w') as f:
-    f.write('strategy,scenario_id,drone_capacity,no_customers,no_steps,drone_travel_distance,utilization\n')
+    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,utilization\n')
 
 
 drone_capacity_values = (1, 2, 3) # We will be testing these values of drone_capacity in our simulation
@@ -102,50 +119,49 @@ strategy = 'farthest_package_first'
 
 for drone_capacity in drone_capacity_values:
     
-    for i in range(40):
+    for i in range(20):
 
         filename = path + 'saved_state' + str(i) + '.txt'
         steps, drone_travel_distance, utilization = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
         no_customers = len(open(filename).readlines()) - 1
-        save_result(i, strategy, (steps, drone_travel_distance, utilization), (drone_capacity, no_customers))
-
+        save_result(i, strategy, (steps[0], steps[1], drone_travel_distance, utilization), (drone_capacity, no_customers))
     
 
 strategy = 'closest_package_first'
 
 for drone_capacity in drone_capacity_values:
     
-    for i in range(40):
+    for i in range(20):
 
         filename = path + 'saved_state' + str(i) + '.txt'
         steps, drone_travel_distance, utilization = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
         no_customers = len(open(filename).readlines()) - 1
-        save_result(i, strategy, (steps, drone_travel_distance, utilization), (drone_capacity, no_customers))
-
+        save_result(i, strategy, (steps[0], steps[1], drone_travel_distance, utilization), (drone_capacity, no_customers))
+ 
 
 strategy = 'most_packages_first'
 
 for drone_capacity in drone_capacity_values:
     
-    for i in range(40):
+    for i in range(20):
 
         filename = path + 'saved_state' + str(i) + '.txt'
         steps, drone_travel_distance, utilization = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
         no_customers = len(open(filename).readlines()) - 1
-        save_result(i, strategy, (steps, drone_travel_distance, utilization), (drone_capacity, no_customers))
-
+        save_result(i, strategy, (steps[0], steps[1], drone_travel_distance, utilization), (drone_capacity, no_customers))
+ 
 
 strategy = 'farthest_package_first_MPA'
 
 for drone_capacity in drone_capacity_values:
     
-    for i in range(40):
+    for i in range(20):
 
         filename = path + 'saved_state' + str(i) + '.txt'
         steps, drone_travel_distance, utilization = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
         no_customers = len(open(filename).readlines()) - 1
-        save_result(i, strategy, (steps, drone_travel_distance, utilization), (drone_capacity, no_customers))
-
+        save_result(i, strategy, (steps[0], steps[1], drone_travel_distance, utilization), (drone_capacity, no_customers))
+ 
 
 
 
