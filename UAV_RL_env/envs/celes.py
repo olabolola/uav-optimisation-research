@@ -153,7 +153,7 @@ class Drone:
 
         #What is the maximum distance our drone can travel with its current battery level
         return self.battery / (self.cost * self.drone_speed)
-#         return float('inf')
+        # return float('inf')
 
     #This function is used to move towards the next customer in the drone's list 
     #If we have no packages left the drone will return to the home truck
@@ -203,7 +203,14 @@ class Drone:
                     self.no_packages = len(self.packages)
                     package.customer.no_of_packages -= (old_length - len(self.packages))
                     if package.customer.no_of_packages == 0:
+                        #If the customer has no more packages left we remove the customer
                         customers.remove(package.customer)
+
+                        #We also add the customer_waiting_time
+                        self.home_truck.total_customer_waiting_time += package.waiting_time
+
+                        #Also add the total package waiting time for the packages delivered
+                        self.home_truck.total_package_waiting_time += (package.waiting_time * (old_length - self.no_packages))
                         
         #If we have no more packages, go back to the home truck
         else:
@@ -228,6 +235,7 @@ class Package:
         self.mass = mass
         self.height = height
         self.width = width
+        self.waiting_time = 0
 
 
 class Position:
@@ -325,7 +333,7 @@ class Truck:
     
     no_of_drones = 0
     #We might just want to inherit from a superclass...
-    def __init__(self, position, cost = 0.0006, truck_speed = 90, truck_id = None, total_no_drones = 0, strategy = 'next_closest'):
+    def __init__(self, position, cost = 0.0006, truck_speed = 8, truck_id = None, total_no_drones = 0, strategy = 'next_closest'):
         
 
         #Strategy parameters
@@ -358,6 +366,9 @@ class Truck:
 
         #This is the cluster the truck is currently delivering from
         self.current_cluster = None
+
+        self.total_package_waiting_time = 0
+        self.total_customer_waiting_time = 0
     
     #In this function we load the packages onto the truck after we perform the clustering
     def load_package(self, package, cluster):
@@ -677,8 +688,14 @@ class Truck:
     def go_to_next_cluster(self):
         
 
-
-        if len(self.cluster_centroids) > 0 and self.cluster_finished():
+        #In the first if statement we check if we have finished all clusters. If so we return to the warehouse.
+        #We can say that we have finished all our clusters if we have no cluster centroids in our list
+        #AND all drones are on the truck AND we have no packages left
+        if len(self.cluster_centroids) == 0 and self.no_drones == self.total_no_drones and self.no_packages == 0:
+            #If we're done move towards the warehouse
+            warehouse_position = Position(1000, 1000)
+            arrived = self.move_towards_position(warehouse_position)
+        elif len(self.cluster_centroids) > 0 and self.cluster_finished():
             self.current_cluster = self.cluster_centroids[-1]
             cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
             arrived = self.move_towards_position(cluster_position)

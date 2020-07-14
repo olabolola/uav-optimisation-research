@@ -117,13 +117,11 @@ class custom_class(gym.Env):
             
             self.done[1] = True
 
-            #Here we make sure all the drones have returned to their trucks
-            drones_on_trucks = True
+            self.done[0] = True
+            #Here we make sure the truck has returned to the warehouse
             for truck in self.trucks:
-                if truck.total_no_drones != truck.no_drones:
-                    drones_on_trucks = False
-            
-            self.done[0] = drones_on_trucks
+                if truck.position != self.warehouse_position:
+                    self.done[0] = False
 
             
         #Return reward, observation, done, info
@@ -287,12 +285,11 @@ class custom_class(gym.Env):
 
 
     def _take_drone_action(self, drone, action):
-        # Actions for the drone policy:
-            # a. Go back to Home truck --> action = "return_to_home_truck"
-            # b. Deliver next package --> action = "deliver_next_package"
-            # c. Failsafe mode --> action = "failsafe_mode"
-        #We could probably use a simpler encoding scheme for the drone actions
-        #but we'll keep it the way it is now for better readability
+
+        #Each step we want to add 1 to the waiting time of the packages
+        for package in drone.packages:
+            package.waiting_time += 1
+
 
         drone.charge()
         drone.steadystate_consumption()
@@ -313,6 +310,14 @@ class custom_class(gym.Env):
 
 
     def _take_truck_action(self, truck, action):
+
+        #Each step we want to add 1 to the waiting time of the packages
+        for cluster_packages in truck.packages.values():
+            for package in cluster_packages:
+                package.waiting_time += 1
+
+
+
         #For now action is a 2-tuple that tells the truck where to go to
         if action == 'nothing':
             pass
