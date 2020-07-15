@@ -44,7 +44,8 @@ class Drone:
         #Here we store the total distance travelled by the drone over the course of the run
         self.total_travel_distance = 0
 
-        #Here we store the total time where the drone is active
+        #Here we store the total active time of a drone in clusters
+        #Note that we consider the 2 minute dropoff time to be part of the active time
         self.total_active_time = 0
 
         
@@ -160,7 +161,9 @@ class Drone:
     def deliver_next_package(self, customers):
 
         #Here we check if the drone is active. If so, we add 1 second to its active time
-        if self.en_route:
+        #A drone is active if it is moving somewhere OR if it dropping off a package
+        #In other words a drone is active when it is NOT on a truck
+        if self.position != self.home_truck.position:
             self.total_active_time += 1
         
         #First check if we have any packages to deliver. If that is the case check if we can reach
@@ -367,9 +370,20 @@ class Truck:
         #This is the cluster the truck is currently delivering from
         self.current_cluster = None
 
-        self.total_package_waiting_time = 0
-        self.total_customer_waiting_time = 0
-    
+
+        self.total_package_waiting_time = 0 #Here we store the total time for each package to be delivered
+        self.total_customer_waiting_time = 0 #Here we store the total time for each customer to be fully serviced
+
+
+        #Here we store the total distance travelled by the truck throughout the run
+        self.total_travel_distance = 0
+
+        #Here we store the total time this truck spent in a cluster
+        self.total_time_in_cluster = 0
+        
+
+
+
     #In this function we load the packages onto the truck after we perform the clustering
     def load_package(self, package, cluster):
         if cluster not in self.packages:
@@ -641,6 +655,11 @@ class Truck:
 
 
     def move_towards_position(self, position):
+
+        #In this function we want to actually move the truck in addition to adding the distance travelled to self.total_distance_travelled
+        #We do this by recording the old position then calculating the distance to the new position
+        old_position = Position(self.position.x, self.position.y)
+
         self.is_moving = True
         #This whole complicated function is to ensure the truck moves like it's in Manhattan
         if get_manhattan_distance(self.position, position) <= self.truck_speed:
@@ -676,6 +695,11 @@ class Truck:
                 drone.position.x = self.position.x
                 drone.position.y = self.position.y
 
+        #Here we calculate the distance travelled in this step and add it to the run
+        distance_traveled = get_manhattan_distance(self.position, old_position)
+        self.total_travel_distance += distance_traveled
+
+        #Here we check if the truck reached the destination
         if self.position.x == position.x and self.position.y == position.y:
             self.is_moving = False
 
@@ -706,6 +730,11 @@ class Truck:
         else:
             cluster_position = Position(self.current_cluster[0], self.current_cluster[1])
             self.move_towards_position(cluster_position)
+
+        #Here we also want to calculate how much time our trucks are in clusters
+        #We do this by check if our current position is the same as self.current_cluster
+        if self.position == Position(self.current_cluster[0], self.current_cluster[1]):
+            self.total_time_in_cluster += 1
             
 
             

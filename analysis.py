@@ -5,22 +5,26 @@ import pandas as pd
 
 df = pd.read_csv('results/results.txt')
 
-x = df[(df.no_customers == 500) & (df.drone_capacity == 2)]
+# print(df.X1.min())
+# print(df.X2.min())
+# print(df.utilization.mean())
 
-x1 = x[x.strategy == 'farthest_package_first'].no_steps.min()
-x2 = x[x.strategy == 'closest_package_first'].no_steps.min()
-x3 = x[x.strategy == 'most_packages_first'].no_steps.min()
-x4 = x[x.strategy == 'farthest_package_first_MPA'].no_steps.min()
+# x = df[(df.no_customers == 500) & (df.drone_capacity == 2)]
 
-
-vals = [x1, x2, x3, x4]
-
-x_axis = np.arange(4)
-x_ticks = ['FPF', 'CPF', 'MPF', 'FPF_MPA']
+# x1 = x[x.strategy == 'farthest_package_first'].X2.mean()
+# x2 = x[x.strategy == 'closest_package_first'].X2.mean()
+# x3 = x[x.strategy == 'most_packages_first'].X2.mean()
+# x4 = x[x.strategy == 'farthest_package_first_MPA'].X2.mean()
 
 
-plt.bar(x_axis, vals, color = ['r', 'g', 'b', '#654987'])
+# vals = [x1, x2, x3, x4]
 
-plt.xticks(x_axis, x_ticks)
+# x_axis = np.arange(4)
+# x_ticks = ['FPF', 'CPF', 'MPF', 'FPF_MPA']
 
-plt.show()
+
+# plt.bar(x_axis, vals, color = ['r', 'g', 'b', '#654987'])
+
+# plt.xticks(x_axis, x_ticks)
+
+# plt.show()

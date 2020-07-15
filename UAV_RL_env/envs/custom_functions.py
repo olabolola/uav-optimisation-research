@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     import celes
 
 #Width and height of the grid on witch our customers live
-#TODO make this 2000x2000 again
+
 width = 2000
 height = 2000
 
@@ -226,7 +226,7 @@ class custom_class(gym.Env):
         #Here we save the state of our system
         if self.save_state:
             
-            with open('saved_states/saved_state' + str(self.file_suffix) + '.txt', 'w') as f:
+            with open('saved_states/saved_state' + '_' + str(self.no_customers) + '_' + str(self.file_suffix) + '.txt', 'w') as f:
                 f.write('x_coordinate,y_coordinate,no_packages\n')
                 for customer in self.customers:
                     f.write(str(customer.position) + ', ' + str(customer.no_of_packages) + '\n')
