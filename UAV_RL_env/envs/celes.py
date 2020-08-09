@@ -8,13 +8,13 @@ import random
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, cost =  0.001, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
+    def __init__(self, position, home_truck = None, cost =  0.02, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
         
         self.capacity = capacity
 
         self.position = position
 
-        #Drone cost is defined as the amount of battery consumed per unit of drone_speed distance crossed
+        #Drone cost is defined as the amount of battery consumed per unit of distance crossed
         self.cost = cost
 
         #Drone speed is given in units_of_distance/s
@@ -23,7 +23,7 @@ class Drone:
         #Battery is just a number representing the percentage of battery remaining
         self.battery = 100
         #charge_increase is how much charge the battery increases every time step when it is charging
-        self.charge_increase = 1
+        self.charge_increase = 0.1
         self.drone_id = drone_id
 
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
@@ -68,8 +68,10 @@ class Drone:
 
 
     
-    #After a drone has delivered all its packages, we call this function which makes the drone return to its home truck
     def go_to_home_truck(self):
+        """
+        After a drone has delivered all its packages, we call this function to make it return to its home truck
+        """
 
         distance = get_euclidean_distance(self.position, self.home_truck.position)
 
@@ -96,9 +98,11 @@ class Drone:
 
             
 
-    #We use this function to move towards a certain position
-    #This function returns True is we reach the position and false otherwise
     def go_to_position(self, position):
+        """
+        This function moves the drone towards a certain position.
+        If we reach the destination we return True, otherwise we return false
+        """
         distance = get_euclidean_distance(self.position, position)
         self.en_route = True
         self.on_truck = False
@@ -131,34 +135,44 @@ class Drone:
         return False   
 
 
-    #We use this function to consume the battery whenever we move
     def consume_battery(self, distance):
-        
+        """
+        This function is called whenever the drone moves.
+        We subtract self.cost for each unit of distance it travelled
+        """
+
         #The amount of battery consumed is based on the distance travelled
-        if self.battery - (self.cost * (distance / self.drone_speed)) < 0:
+        if self.battery - (distance * self.cost) < 0:
             self.battery = 0
+            # print('asd')
         else:
-            self.battery = self.battery - (self.cost * (distance / self.drone_speed))
+            # print('hi')
+            self.battery = self.battery - (distance * self.cost)
     
-    #Our drone has a constant steady state consumption whether its moving or not
     def steadystate_consumption(self):
+        """
+        There is a constant drainage of the battery equal to self.cost/4 every second
+        """
         if self.battery - self.cost/4 < 0:
             self.battery = 0
         else:
             self.battery -= self.cost/4 
-        
-
-        
-    #We use this function to calculate how far we can travel with our current battery charge
+         
     def get_range_of_reach(self):
+        """
+        This function is used to calculate the maximum distance our drone can travel with its
+        current battery charge
+        """
 
         #What is the maximum distance our drone can travel with its current battery level
-        return self.battery / (self.cost * self.drone_speed)
+        return self.battery / self.cost
         # return float('inf')
 
-    #This function is used to move towards the next customer in the drone's list 
-    #If we have no packages left the drone will return to the home truck
     def deliver_next_package(self, customers):
+        """
+        Move towards the next customer in our list. 
+        If we have no more customers to deliver to we go_to_home_truck()
+        """
 
         #Here we check if the drone is active. If so, we add 1 second to its active time
         #A drone is active if it is moving somewhere OR if it dropping off a package
@@ -223,8 +237,10 @@ class Drone:
                 if self.home_truck.no_packages > 0:
                     self.load_package()
 
-    #This function increases the charge of the battery while the drone is on the truck
     def charge(self):
+        """
+        While the drone is on the truck we increase its charge every step by self.charge_increase
+        """
         if self.on_truck:
             if self.battery + self.charge_increase < 100:
                 self.battery += self.charge_increase
@@ -265,15 +281,13 @@ class Position:
     def __ne__(self, pos):
         return not self.__eq__(pos)
 
-    
-    #We are going to define a custom subtraction operation in order to get a point d distance away from 
-    #position1 on the straight line between position1 and position2
-
     def __sub__(self, position2):
         return Position(self.x - position2.x, self.y - position2.y)
 
-    #This function convert any point/vector into a unit vector
     def _normalize_position(self):
+        """
+        Here we convert a vector into a unit vector
+        """
         norm = (self.x ** 2 + self.y ** 2) ** 0.5
         self.x /= norm
         self.y /= norm
@@ -285,10 +299,11 @@ class Position:
         # 2) Normalize v --> u
         # 3) new position = position1 + du
 
-
-    #This function moves self.x and self.y in the direction of position2 (in a straight line)
-    #This function also returns the distance travelled in this instance
     def get_point_on_line(self, position2, distance):
+        """
+        In this function we move a distance of "distance" towards position2.
+        We return the distance travelled. 
+        """
         v = position2 - self
 
         previous_position = Position(self.x, self.y)
@@ -327,6 +342,9 @@ class Customer:
         return d  
 
     def add_package(self, package):
+        """
+        This function adds a package to our customer
+        """
         self.no_of_packages += 1
         self.quasi_no_packages += 1
         self.packages.append(package)   
@@ -381,20 +399,22 @@ class Truck:
         #Here we store the total time this truck spent in a cluster
         self.total_time_in_cluster = 0
         
-
-
-
-    #In this function we load the packages onto the truck after we perform the clustering
     def load_package(self, package, cluster):
+        """
+        This function adds a package to the cluster list specified in the truck dict.
+        If the cluster doesnt exist we add the cluster to the dict and then add the package
+        """
         if cluster not in self.packages:
             self.packages[cluster] = []
         self.packages[cluster].append(package)
         self.no_packages += 1
 
-
-
-    #Here we sort the packages in each cluster according to the how parameter
     def sort_packages(self, how):
+        """
+        In this function we sort the packages in the truck dict either according to:
+            1) The distance from the center of the cluster, or
+            2) The number of packages the customer has 
+        """
         if how == 'distance': #Here we sort the packages according to the distance from the center of the cluster
             for cluster in self.packages.keys():
                 cluster_position = Position(cluster[0], cluster[1])
@@ -402,11 +422,12 @@ class Truck:
         elif how == 'no_packages': #Here we sort the packages according to the number of packages of the customer
             for cluster in self.packages.keys():
                 self.packages[cluster] = sorted(self.packages[cluster], key = lambda x : (x.customer.quasi_no_packages, x.customer.position.x, x.customer.position.y))
-                 
-
-
+                
 
     def load_drone_package(self, drone):
+        """
+        In this function we assign a package to a drone according the strategy we have specified in self.strategy.
+        """
 
         #This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
         total_delivery_distance = 0
@@ -414,6 +435,7 @@ class Truck:
         no_packages_to_load = drone.capacity
 
 
+        #In this strategy we load the drone farthest away from the truck then next closest to that package and so on.
         if self.strategy == 'farthest_package_first':
 
             for _ in range(no_packages_to_load):
@@ -479,6 +501,7 @@ class Truck:
                         drone.no_packages += 1
                     else:
                         break
+        #In this strategy we load the package closest to the truck, then closest to that package and so on.
         elif self.strategy == 'closest_package_first':
             for _ in range(no_packages_to_load):
 
@@ -519,7 +542,7 @@ class Truck:
                         drone.no_packages += 1
                     else:
                         break
-
+        #Here we load the package for the customer with the highest number of packages, then the closest package to that and so on.                    
         elif self.strategy=='most_packages_first':
                             
             #sort packages dictionary by number of packages
@@ -594,8 +617,17 @@ class Truck:
             for _ in range(no_packages_to_load):
 
                 if drone.no_packages == 0:
-                    if len(self.packages[self.current_cluster]) > 0:
-                        package_to_deliver = self.packages[self.current_cluster][0]
+
+                    can_deliver = []
+
+                    for package in self.packages[self.current_cluster]:
+                        if no_packages_to_load  >= package.customer.no_of_packages:
+                            can_deliver.append(package)
+
+
+                    if len(can_deliver) != 0:
+
+                        package_to_deliver = can_deliver[0]
                         total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
 
                         #Check if it is possible to deliver the package with the current charge
@@ -608,6 +640,22 @@ class Truck:
                             drone.no_packages += 1
                         else:
                             break
+                    else:
+
+                        if len(self.packages[self.current_cluster]) > 0:
+                            package_to_deliver = self.packages[self.current_cluster][0]
+                            total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
+
+                            #Check if it is possible to deliver the package with the current charge
+                            #If it is possible then load the package
+                            if total_delivery_distance * 2 <= drone.get_range_of_reach():
+                                self.packages[self.current_cluster].remove(package_to_deliver)
+                                self.no_packages -= 1
+
+                                drone.packages.append(package_to_deliver)
+                                drone.no_packages += 1
+                            else:
+                                break
 
                 elif len(self.packages[self.current_cluster]) > 0:
 
@@ -643,6 +691,9 @@ class Truck:
                             break
                         
     def add_cluster_centroid(self, pos):
+        """
+        Here we add one of our cluster centroids to the list of cluster centroids on the truck as a tuple
+        """
         self.cluster_centroids.append(tuple(pos))
     
 
@@ -655,6 +706,10 @@ class Truck:
 
 
     def move_towards_position(self, position):
+        """
+        In this function we move the truck towards "position" in a manhattan manner (straight lines only).
+        We return True if the truck reached the destination and False otherwise
+        """
 
         #In this function we want to actually move the truck in addition to adding the distance travelled to self.total_distance_travelled
         #We do this by recording the old position then calculating the distance to the new position
@@ -710,7 +765,10 @@ class Truck:
         
 
     def go_to_next_cluster(self):
-        
+        """
+        This function moves the truck to the next cluster after checking if the current cluster has finished.
+        Once the truck has finished all the clusters it returns to the warehouse.
+        """
 
         #In the first if statement we check if we have finished all clusters. If so we return to the warehouse.
         #We can say that we have finished all our clusters if we have no cluster centroids in our list
@@ -741,6 +799,10 @@ class Truck:
 
 
     def cluster_finished(self):
+        """
+        In this function we check if we have finished the current cluster.
+        Return True if we have and False otherwise.
+        """
         #Return true if we have delivered all packages in cluster
         if self.total_no_drones != self.no_drones:            
             return False
@@ -758,7 +820,9 @@ class Truck:
 
             
     def load_drone(self, drone):
-
+        """
+        In this function we load a drone onto the truck
+        """
         drone.position.x = self.position.x
         drone.position.y = self.position.y
 
@@ -774,6 +838,11 @@ class Warehouse:
         self.position = position
     
     def cluster_and_colour(self, customers, trucks, no_clusters):
+        """
+        In this function we cluster our customers using KMeans and assign them a colour.
+        We also assign the trucks to the clusters and assign the packages to the trucks.
+        Finally we sort the packages on the trucks according to the strategy being used.
+        """
         customer_x = []
         customer_y = []
 
@@ -854,7 +923,13 @@ class Warehouse:
 
 
 def get_euclidean_distance(position1, position2):
+    """
+    Return the euclidean distance between two points
+    """
     return ((position2.y - position1.y) ** 2 + (position2.x - position1.x) ** 2) ** 0.5
 
 def get_manhattan_distance(position1, position2):
+    """
+    Return the msanhattan distance between two points
+    """
     return abs(position1.x - position2.x) + abs(position1.y - position2.y)  

@@ -138,8 +138,8 @@ no_customers_values = (50, 100, 200, 500)
 
 #Before we begin the simulation we want to initialize the csv file which will store the results
 
-with open('results/results.txt', 'w') as f:
-    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time\n')
+# with open('results/results.txt', 'w') as f:
+#     f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time\n')
 
 
 drone_capacity_values = (1, 2, 3) # We will be testing these values of drone_capacity in our simulation
@@ -200,10 +200,9 @@ for drone_capacity in drone_capacity_values:
 
 
 # strategy = 'farthest_package_first'
-# for i in range(no_runs):
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps, drone_travel_distance, utilization = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, (steps, drone_travel_distance, utilization), (no_customers, drone_capacity))
+# filename = path + 'saved_state_' + str(100) + '_0.txt'
+# #print(filename)
+# run_env(0, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = 3)    
 
 # random.seed(42)
 # strategy = 'closest_package_first'
