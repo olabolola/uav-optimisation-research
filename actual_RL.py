@@ -138,8 +138,8 @@ no_customers_values = (50, 100, 200, 500)
 
 #Before we begin the simulation we want to initialize the csv file which will store the results
 
-# with open('results/results.txt', 'w') as f:
-#     f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time\n')
+with open('results/results.txt', 'w') as f:
+    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time\n')
 
 
 drone_capacity_values = (1, 2, 3) # We will be testing these values of drone_capacity in our simulation

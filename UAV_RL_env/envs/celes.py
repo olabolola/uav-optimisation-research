@@ -23,7 +23,7 @@ class Drone:
         #Battery is just a number representing the percentage of battery remaining
         self.battery = 100
         #charge_increase is how much charge the battery increases every time step when it is charging
-        self.charge_increase = 0.1
+        self.charge_increase = 0.05
         self.drone_id = drone_id
 
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
@@ -96,7 +96,6 @@ class Drone:
             #Here we add the distance travelled now to the total distance travelled
             self.total_travel_distance += distance_traveled
 
-            
 
     def go_to_position(self, position):
         """
@@ -117,10 +116,7 @@ class Drone:
             self.position.x = position.x
             self.position.y = position.y
             self.en_route = False
-            
-
-
-
+    
             return True
         else:
 
@@ -426,7 +422,7 @@ class Truck:
 
     def load_drone_package(self, drone):
         """
-        In this function we assign a package to a drone according the strategy we have specified in self.strategy.
+        In this function we assign packages to a drone according the strategy we have specified in self.strategy.
         """
 
         #This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
