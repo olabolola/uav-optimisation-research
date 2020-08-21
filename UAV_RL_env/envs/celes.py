@@ -10,6 +10,7 @@ class Drone:
     
     def __init__(self, position, home_truck = None, cost =  0.02, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
         
+        #The capacity of the drone is the maximum number of packages it can carry at the same time
         self.capacity = capacity
 
         self.position = position
@@ -17,18 +18,18 @@ class Drone:
         #Drone cost is defined as the amount of battery consumed per unit of distance crossed
         self.cost = cost
 
-        #Drone speed is given in units_of_distance/s
+        #Drone speed is given in m/s
         self.drone_speed = drone_speed
 
         #Battery is just a number representing the percentage of battery remaining
         self.battery = 100
         #charge_increase is how much charge the battery increases every time step when it is charging
         self.charge_increase = 0.05
+
         self.drone_id = drone_id
 
         #Home truck is the truck the drone is initially loaded onto (And cannot change)
         self.home_truck = home_truck
-       
        
         #The packages list contains the packages the drone is carrying RIGHT NOW
         self.packages = []
@@ -48,35 +49,21 @@ class Drone:
         #Note that we consider the 2 minute dropoff time to be part of the active time
         self.total_active_time = 0
 
-        
-
-
-    #So far we haven't used this function at all
-    def get_package_dropoff_time(self, residence_type):
-        if residence_type == 'apartment':
-            return 10
-        elif residence_type == 'house':
-            return 5
+        #Here we store the total delay time the drone spends waiting at the customer.
+        self.total_delay_time = 0
 
     #When a drone returns from a trip delivering packages, we call this function to load additional packages
     def load_package(self):
         self.home_truck.load_drone_package(self)
-
-    #We haven't used this function so far
-    def hand_package_to_customer(self, package):
-        pass
-
-
     
     def go_to_home_truck(self):
         """
         After a drone has delivered all its packages, we call this function to make it return to its home truck
         """
-
         distance = get_euclidean_distance(self.position, self.home_truck.position)
 
         #First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
-        if distance <= self.drone_speed:
+        if distance <= self.drone_speed: # Here we go straight to the truck
             
             self.consume_battery(distance)
 
@@ -86,7 +73,7 @@ class Drone:
             if not self.on_truck:
                 self.home_truck.load_drone(self)
 
-        else:            
+        else: #Here we move the full length
             self.en_route = True
             self.on_truck = False
             distance_traveled = self.position.get_point_on_line(self.home_truck.position, self.drone_speed)
@@ -136,7 +123,6 @@ class Drone:
         This function is called whenever the drone moves.
         We subtract self.cost for each unit of distance it travelled
         """
-
         #The amount of battery consumed is based on the distance travelled
         if self.battery - (distance * self.cost) < 0:
             self.battery = 0
@@ -200,9 +186,9 @@ class Drone:
                 self.en_route = False
                 #Once we arrive at a customer, we want to perform a 2 minute delay (120 steps)
                 self.delay_variable += 1
-
+                self.total_delay_time += 1
                 
-                if self.delay_variable == 120:
+                if self.delay_variable == 5:
                     self.delay_variable = 0
                     self.en_route = True
                     
@@ -326,7 +312,7 @@ class Customer:
         self.packages = []
         self.colour = None
 
-        #This tells us how many packages left on the truck
+        #This tells us how many packages are still on the truck
         self.quasi_no_packages = 0
 
         

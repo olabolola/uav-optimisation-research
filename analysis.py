@@ -41,14 +41,14 @@ def plot_by_X(df, by, mean_value_col, save = False):
 color = ['r', 'g', 'b', 'y']
 
 
-df = pd.read_csv('results/results.txt')
+df = pd.read_csv('results/results.csv')
 
 df.strategy = df.strategy.replace('farthest_package_first', 'FPF')
 df.strategy = df.strategy.replace('closest_package_first', 'CPF')
 df.strategy = df.strategy.replace('most_packages_first', 'MPF')
 df.strategy = df.strategy.replace('farthest_package_first_MPA', 'FPF_MPA')
 
-cols = ['total_time', 'A', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time']
+cols = ['total_time', 'A', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time', 'total_delay_time']
 bies = ['drone_capacity', 'no_customers']
 
 for by in bies:
