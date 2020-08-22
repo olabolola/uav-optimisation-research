@@ -52,6 +52,7 @@ class custom_class(gym.Env):
         #Customer initialization
         self.no_customers = no_customers
         self.customers = []
+        self.unserviced_customers = []
         self.customer_positions = []
 
         #Probability distribution for the packages
@@ -113,7 +114,7 @@ class custom_class(gym.Env):
         
         #Check if we are done
         #First we check if there are no more customers to deliver to
-        if len(self.customers) == 0:
+        if len(self.unserviced_customers) == 0:
             
             self.done[1] = True
 
@@ -192,6 +193,7 @@ class custom_class(gym.Env):
         if self.load:
             self.load_from_file()
             self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
+            self.unserviced_customers = self.customers[:]
             return
             
 
@@ -220,7 +222,7 @@ class custom_class(gym.Env):
         #cluster customers, and distribute packages accordingly
         self.warehouse.cluster_and_colour(self.customers, self.trucks, self.no_clusters)
 
-        
+        self.unserviced_customers = self.customers[:]
         
         
         #Here we save the state of our system
@@ -262,8 +264,8 @@ class custom_class(gym.Env):
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
 
-        
-        for customer in self.customers:
+
+        for customer in self.unserviced_customers:
             ax1.scatter(customer.position.x, customer.position.y, c = customer.colour, alpha = 0.5, label="customer")
         drone_plot = ax1.scatter(drone_x, drone_y, c = 'b', label = 'drone', marker = ".")
         truck_plot = ax1.scatter(truck_x, truck_y, c = 'g', label = 'truck', marker = ",")
@@ -301,7 +303,7 @@ class custom_class(gym.Env):
             drone.go_to_home_truck()
         elif action == "deliver_next_package":
             if not drone.home_truck.is_moving:
-                drone.deliver_next_package(self.customers)
+                drone.deliver_next_package(self.unserviced_customers)
             else:
                 return
         elif action == "failsafe_mode":

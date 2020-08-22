@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-no_customer_values = [50, 100, 200, 500]
-drone_capacity_values = [1, 2, 3]
+no_customer_values = (50, 100, 200)
+drone_capacity_values = (1, 2, 3)
 strategies = ['FPF', 'CPF', 'MPF', 'FPF_MPA']
 
 def plot_by_X(df, by, mean_value_col, save = False):
@@ -48,7 +48,7 @@ df.strategy = df.strategy.replace('closest_package_first', 'CPF')
 df.strategy = df.strategy.replace('most_packages_first', 'MPF')
 df.strategy = df.strategy.replace('farthest_package_first_MPA', 'FPF_MPA')
 
-cols = ['total_time', 'A', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time', 'total_delay_time']
+cols = ['total_time', 'A', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time', 'total_delay_time', 'avg_span_2', 'avg_span_3', 'avg_span_4']
 bies = ['drone_capacity', 'no_customers']
 
 for by in bies:

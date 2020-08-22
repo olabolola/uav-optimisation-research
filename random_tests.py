@@ -1,2 +1,3 @@
-x = 1/3
-print(round(x, 2))
+d = {1:'asd', 2:'asdaa'}
+for a in d:
+    print(a)

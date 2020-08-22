@@ -23,7 +23,10 @@ def save_result(scenario_id, strategy, results, information):
     
     with open('results/results.csv', 'a') as f:
 
-        print_string = strategy + ',' + str(scenario_id) + ',' + str(information[0]) + ',' + str(information[1]) + ',' + str(results[0]) + ',' + str(results[1]) + ',' + str(results[2]) + ',' + str(results[3]) + ',' + str(results[4]) + ',' + str(results[5]) + ',' + str(results[6]) + ',' + str(results[7]) + ',' + str(results[8]) + ',' + str(results[9]) + '\n'
+        print_string = strategy + ',' + str(scenario_id) + ',' + str(information[0]) + ',' + str(information[1]) + ','
+        results_as_str = [str(res) for res in results]
+        print_string += ','.join(results_as_str)
+        print_string += '\n'
         f.write(print_string)
 
 def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_customers = 60, p = [1], load = False, load_file = None, strategy = 'next_closest', save_state=False, drone_capacity = 2):
@@ -81,9 +84,20 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
 
             #Total amount of time spent in the 2 min delay while delivering package
             total_delay_time = 0
+
+            # The span is the time between the inital and final package deliveries for each customer
+            # We store seperate values for each original_no_packages
+            # Spans will be a dict with original_no_packages as the key and the total span as the value
+            spans = {2:0,3:0,4:0}
             
+
             drones = obs[1][0]
             trucks = obs[0][0]
+            customers = obs[2]
+
+            for customer in customers:
+                if customer.original_no_packages in spans.keys():
+                    spans[customer.original_no_packages] += (customer.time_final - customer.time_initial)
 
             for drone in drones:
                 drone_travel_distance += drone.total_travel_distance
@@ -98,7 +112,7 @@ def run_env(run_number, no_trucks = 3, no_clusters = 6, no_drones = 3, no_custom
 
             utilization = X2 / (X1 * no_drones)
             
-            return (steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, total_package_waiting_time, total_customer_waiting_time, total_delay_time)
+            return (steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, total_package_waiting_time, total_customer_waiting_time, total_delay_time, spans)
 
         
 
@@ -126,7 +140,7 @@ path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV 
 
 #Generate the 40 test files
 
-no_customers_values = (50, 100, 200, 500)
+no_customers_values = (50, 100, 200)
 # strategy = 'farthest_package_first'
 
 # for no_customers in no_customers_values:
@@ -143,11 +157,46 @@ no_customers_values = (50, 100, 200, 500)
 #Before we begin the simulation we want to initialize the csv file which will store the results
 
 with open('results/results.csv', 'w') as f:
-    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time\n')
+    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4\n')
 
 
 drone_capacity_values = (1, 2, 3) # We will be testing these values of drone_capacity in our simulation
 
+strategy = 'farthest_package_first_MPA'
+
+for drone_capacity in drone_capacity_values:
+    
+    for no_customers in no_customers_values:
+        for i in range(10):
+
+            filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
+            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time, spans = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+            f = open(filename).readlines()
+            no_packages_total = 0
+            no_customers_per_no_packages = {no:0 for no in spans.keys()}
+            for line in f[1:]:
+                no_packages = int(line.split(',')[-1])
+                no_packages_total += no_packages
+                if no_packages != 1:
+                    no_customers_per_no_packages[no_packages] += no_packages
+            # This is to prevent a division by 0 error
+            for k in no_customers_per_no_packages:
+                if no_customers_per_no_packages[k] == 0:
+                    no_customers_per_no_packages[k] = 1
+            # This is to prevent division by 0 errors
+            if no_customers_per_no_packages[2] == 0:
+                avg_span_2 = -10
+            else:
+                avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+            if no_customers_per_no_packages[3] == 0:
+                avg_span_3 = -10
+            else:
+                avg_span_3 = round(spans[2] / no_customers_per_no_packages[3], 2)
+            if no_customers_per_no_packages[4] == 0:
+                avg_span_4 = -10
+            else:
+                avg_span_4 = round(spans[2] / no_customers_per_no_packages[4], 2)
+            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages_total, 2), round(customer_wait_time / no_customers, 2), total_delay_time, avg_span_2, avg_span_3, avg_span_4), (drone_capacity, no_customers))
 
 strategy = 'farthest_package_first'
 
@@ -157,10 +206,33 @@ for drone_capacity in drone_capacity_values:
         for i in range(10):
 
             filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
-            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time, spans = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
             f = open(filename).readlines()
-            no_packages = sum([int(i.split(',')[-1]) for i in f[1:]])
-            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages, 2), round(customer_wait_time / no_customers, 2), total_delay_time), (drone_capacity, no_customers))
+            no_packages_total = 0
+            no_customers_per_no_packages = {no:0 for no in spans.keys()}
+            for line in f[1:]:
+                no_packages = int(line.split(',')[-1])
+                no_packages_total += no_packages
+                if no_packages != 1:
+                    no_customers_per_no_packages[no_packages] += no_packages
+            # This is to prevent a division by 0 error
+            for k in no_customers_per_no_packages:
+                if no_customers_per_no_packages[k] == 0:
+                    no_customers_per_no_packages[k] = 1
+            # This is to prevent division by 0 errors
+            if no_customers_per_no_packages[2] == 0:
+                avg_span_2 = -10
+            else:
+                avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+            if no_customers_per_no_packages[3] == 0:
+                avg_span_3 = -10
+            else:
+                avg_span_3 = round(spans[2] / no_customers_per_no_packages[3], 2)
+            if no_customers_per_no_packages[4] == 0:
+                avg_span_4 = -10
+            else:
+                avg_span_4 = round(spans[2] / no_customers_per_no_packages[4], 2)
+            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages_total, 2), round(customer_wait_time / no_customers, 2), total_delay_time, avg_span_2, avg_span_3, avg_span_4), (drone_capacity, no_customers))
 
 
 strategy = 'closest_package_first'
@@ -171,10 +243,33 @@ for drone_capacity in drone_capacity_values:
         for i in range(10):
 
             filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
-            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time, spans = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
             f = open(filename).readlines()
-            no_packages = sum([int(i.split(',')[-1]) for i in f[1:]])
-            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages, 2), round(customer_wait_time / no_customers, 2), total_delay_time), (drone_capacity, no_customers))
+            no_packages_total = 0
+            no_customers_per_no_packages = {no:0 for no in spans.keys()}
+            for line in f[1:]:
+                no_packages = int(line.split(',')[-1])
+                no_packages_total += no_packages
+                if no_packages != 1:
+                    no_customers_per_no_packages[no_packages] += no_packages
+            # This is to prevent a division by 0 error
+            for k in no_customers_per_no_packages:
+                if no_customers_per_no_packages[k] == 0:
+                    no_customers_per_no_packages[k] = 1
+            # This is to prevent division by 0 errors
+            if no_customers_per_no_packages[2] == 0:
+                avg_span_2 = -10
+            else:
+                avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+            if no_customers_per_no_packages[3] == 0:
+                avg_span_3 = -10
+            else:
+                avg_span_3 = round(spans[2] / no_customers_per_no_packages[3], 2)
+            if no_customers_per_no_packages[4] == 0:
+                avg_span_4 = -10
+            else:
+                avg_span_4 = round(spans[2] / no_customers_per_no_packages[4], 2)
+            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages_total, 2), round(customer_wait_time / no_customers, 2), total_delay_time, avg_span_2, avg_span_3, avg_span_4), (drone_capacity, no_customers))
 
 strategy = 'most_packages_first'
 
@@ -184,65 +279,31 @@ for drone_capacity in drone_capacity_values:
         for i in range(10):
 
             filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
-            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
+            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time, spans = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
             f = open(filename).readlines()
-            no_packages = sum([int(i.split(',')[-1]) for i in f[1:]])
-            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages, 2), round(customer_wait_time / no_customers, 2), total_delay_time), (drone_capacity, no_customers))
- 
-strategy = 'farthest_package_first_MPA'
+            no_packages_total = 0
+            no_customers_per_no_packages = {no:0 for no in spans.keys()}
+            for line in f[1:]:
+                no_packages = int(line.split(',')[-1])
+                no_packages_total += no_packages
+                if no_packages != 1:
+                    no_customers_per_no_packages[no_packages] += no_packages
+            # This is to prevent a division by 0 error
+            for k in no_customers_per_no_packages:
+                if no_customers_per_no_packages[k] == 0:
+                    no_customers_per_no_packages[k] = 1
+            # This is to prevent division by 0 errors
+            if no_customers_per_no_packages[2] == 0:
+                avg_span_2 = -10
+            else:
+                avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+            if no_customers_per_no_packages[3] == 0:
+                avg_span_3 = -10
+            else:
+                avg_span_3 = round(spans[2] / no_customers_per_no_packages[3], 2)
+            if no_customers_per_no_packages[4] == 0:
+                avg_span_4 = -10
+            else:
+                avg_span_4 = round(spans[2] / no_customers_per_no_packages[4], 2)
+            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages_total, 2), round(customer_wait_time / no_customers, 2), total_delay_time, avg_span_2, avg_span_3, avg_span_4), (drone_capacity, no_customers))
 
-for drone_capacity in drone_capacity_values:
-    
-    for no_customers in no_customers_values:
-        for i in range(10):
-
-            filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
-            steps, drone_travel_distance, truck_travel_distance, X1, X2, utilization, package_wait_time, customer_wait_time, total_delay_time = run_env(None, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-            f = open(filename).readlines()
-            no_packages = sum([int(i.split(',')[-1]) for i in f[1:]])
-            save_result(i, strategy, (steps[0], steps[1], round(drone_travel_distance, 2), round(truck_travel_distance, 2), X1, X2, round(utilization, 2) , round(package_wait_time / no_packages, 2), round(customer_wait_time / no_customers, 2), total_delay_time), (drone_capacity, no_customers))
-
-
-# strategy = 'farthest_package_first'
-# filename = path + 'saved_state_' + str(100) + '_0.txt'
-# #print(filename)
-# run_env(0, no_trucks, None, no_drones, None, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = 3)    
-
-# random.seed(42)
-# strategy = 'closest_package_first'
-# for i in range(no_runs):
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps, drone_travel_distance, utilization = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, (steps, drone_travel_distance, utilization), (no_customers, drone_capacity))
-
-# random.seed(42)
-# strategy = 'most_packages_first'
-# for i in range(no_runs):
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps, drone_travel_distance, utilization = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, (steps, drone_travel_distance, utilization), (no_customers, drone_capacity))
-
-# random.seed(42)
-# strategy = 'farthest_package_first_MPA'
-# for i in range(no_runs):
-#     filename = path + 'saved_state' + str(i) + '.txt'
-#     steps, drone_travel_distance, utilization = run_env(i, no_trucks, no_clusters, no_drones, no_customers, p, load=True, load_file=filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)    
-#     save_result(i, strategy, (steps, drone_travel_distance, utilization), (no_customers, drone_capacity))
-
-
-        
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-        
