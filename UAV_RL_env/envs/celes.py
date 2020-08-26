@@ -2,13 +2,12 @@ from sklearn.cluster import KMeans
 import pandas as pd
 import numpy as np
 import random
-
-
+import time
 
 class Drone:
 
     
-    def __init__(self, position, home_truck = None, cost =  0.02, drone_speed = 8, battery = 100, drone_id = None, capacity = 2):
+    def __init__(self, position, home_truck = None, cost =  0.02, drone_speed = 10, battery = 100, drone_id = None, capacity = 2):
         
         #The capacity of the drone is the maximum number of packages it can carry at the same time
         self.capacity = capacity
@@ -24,7 +23,7 @@ class Drone:
         #Battery is just a number representing the percentage of battery remaining
         self.battery = 100
         #charge_increase is how much charge the battery increases every time step when it is charging
-        self.charge_increase = 0.05
+        self.charge_increase = 5
 
         self.drone_id = drone_id
 
@@ -193,6 +192,9 @@ class Drone:
                     #This is one of the packages we are delivering to the customer
                     package = self.packages[0]
 
+                    # If we have arrived then we add 1 to the number of dropoffs this customer has
+                    package.customer.no_dropoffs += 1
+
                     # If the inital time hasn't been set yet then this is the first package to be delivered
                     if package.customer.time_initial == -1:
                         package.customer.time_initial = package.waiting_time
@@ -327,8 +329,8 @@ class Customer:
         self.time_initial = -1
         self.time_final = -1
 
-        # If the customer has multiple packages we store it here
-        self.multiple_packages = False
+        # This is the number of times are drone arrives at this customer
+        self.no_dropoffs = 0
         
 
     def get_customer_info(self):
@@ -680,7 +682,7 @@ class Truck:
                             #If it is possible then load the package
                             if total_delivery_distance * 2 <= drone.get_range_of_reach():
                                 for package in self.packages[self.current_cluster]:
-                                    if package.customer.position == package_to_deliver.customer.position and drone.capacity >= drone.no_packages:
+                                    if package.customer.position == package_to_deliver.customer.position and drone.capacity > drone.no_packages:
                                         self.packages[self.current_cluster].remove(package)
                                         self.no_packages -= 1
 
