@@ -58,8 +58,6 @@ class custom_class(gym.Env):
         #Probability distribution for the packages
         self.p = p
         
-        
-
         #Truck and drone initialization
         self.no_trucks = no_trucks
         self.trucks = []
@@ -75,7 +73,7 @@ class custom_class(gym.Env):
         self.centroids = None
 
         #Check if we have finished delivering all the packages
-        #We have two types of doness.
+        #We have two types of done.
         # 1) When the trucks return to the warehouse
         # 2) When all the packages are delivered 
         self.done = [False, False]
@@ -137,7 +135,6 @@ class custom_class(gym.Env):
         self.no_customers = len(lines) - 1
 
         if self.no_customers == 50:
-
             self.no_clusters = 2
         else:
             self.no_clusters = int(self.no_customers / 50)
@@ -294,7 +291,8 @@ class custom_class(gym.Env):
 
 
         drone.charge()
-        drone.steadystate_consumption()
+        #TODO removed steadystate consumption
+        # drone.steadystate_consumption()
         if action == 'nothing':
             pass
         elif action == "go_to_position":
