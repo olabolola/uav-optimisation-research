@@ -98,7 +98,11 @@ class custom_class(gym.Env):
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
-
+        for customer in self.customers:
+            if customer.quasi_no_packages < 0:
+                print(customer.position)
+            assert(customer.quasi_no_packages >= 0)
+            assert(customer.no_of_packages >= 0)
         #Now the observations
         #For now just make the observation be the list of trucks, drones and remaining customers
                 
@@ -270,7 +274,7 @@ class custom_class(gym.Env):
 
         
        
-        plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
+        # plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
         plt.xlim(-10, width)
         plt.ylim(-10, height)
         
@@ -291,8 +295,10 @@ class custom_class(gym.Env):
 
 
         drone.charge()
+        # print(drone.battery)
         #TODO removed steadystate consumption
-        # drone.steadystate_consumption()
+        if drone.waiting:
+            drone.steadystate_consumption()
         if action == 'nothing':
             pass
         elif action == "go_to_position":

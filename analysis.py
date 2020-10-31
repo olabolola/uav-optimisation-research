@@ -56,9 +56,9 @@ df.avg_nodropoffs_3 = df.avg_nodropoffs_3.replace([-10], np.nan)
 df.avg_nodropoffs_4 = df.avg_nodropoffs_4.replace([-10], np.nan)
 
 no_customer_values = (50, 100, 200, 500)
-drone_capacity_values = (1, 2, 3)
-strategies = ['FPF', 'CPF', 'MPF', 'FPF_MPA', 'FPF_MPA_x']
-
+drone_capacity_values = (1, 2, 3, 4)
+strategies = ['FPF', 'CPF', 'MPF', 'FPF_MPA']
+# strategies = ['FPF', 'FPF_MPA']
 for by in bies:
     for col in cols:
         plot_by_X(df, by, col, save=True)

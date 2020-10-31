@@ -90,9 +90,9 @@ def run_env(run_number=0, no_trucks = 2, no_clusters = 2, no_drones = 3, no_cust
         if not done[1]:
             A += 1
 
-        # if render_cnt % 19 == 0:
-        #     env.render()
-        # render_cnt += 1
+        if render_cnt % 7 == 0:
+            env.render()
+        render_cnt += 1
 
         #When we are finished (trucks return to warehouse) we will return the results of the run
         if done[0]:
@@ -165,8 +165,6 @@ def run_env(run_number=0, no_trucks = 2, no_clusters = 2, no_drones = 3, no_cust
 no_runs = 10
 
 #Different parameters for our run
-no_trucks = 2
-no_drones = 3
 # no_customers = 200
 # no_clusters = int(no_customers / 50)
 
@@ -178,79 +176,85 @@ p = [0.85, 0.09, 0.04, 0.02]
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
 
 # This is just for testing
-# drone_capacity = 3
-# filename = path + 'saved_state_50_1.txt'
-# strategy = 'farthest_package_first'
+drone_capacity = 3
+# filename = path + 'saved_state_50_3.txt'
+filename = path + 'modified.txt'
+params = {
+    'load_file' : filename,
+    'strategy' : "nothing",
+    'drone_capacity' : drone_capacity
+}
+
+params['strategy'] = 'farthest_package_first_MPA'
 # run_env(6, no_trucks, None, no_drones, None, p, load=True, load_file = filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)
 
-#Generate the 40 test files
+results = run_env(load_file=params['load_file'], strategy=params['strategy'], drone_capacity=params['drone_capacity'])
 
-no_customers_values = (50, 100, 200, 500)
-# strategy = 'farthest_package_first'
+spans = results['spans']
+no_dropoffs = results['no_dropoffs']
 
-# for no_customers in no_customers_values:
+# Here we store the number of packages for each group of no_packages.
+# You get the idea :)
+no_packages_total = get_total_no_packages(filename)
+no_packages_per_category = get_no_packages_per_category(filename, spans.keys())
+no_customers_per_no_packages = get_no_customers_per_no_packages(filename, spans.keys())
+# This is to prevent division by 0 errors
+if no_packages_per_category[2] == 0:
+    avg_span_2 = -10
+    avg_nodropoofs_2 = -10
+else:
+    avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+    avg_nodropoofs_2 = round(no_dropoffs[2] / no_packages_per_category[2], 2)
+if no_packages_per_category[3] == 0:
+    avg_span_3 = -10
+    avg_nodropoofs_3 = -10
+else:
+    avg_span_3 = round(spans[3] / no_customers_per_no_packages[3], 2)
+    avg_nodropoofs_3 = round(no_dropoffs[3] / no_packages_per_category[3], 2)
+if no_packages_per_category[4] == 0:
+    avg_span_4 = -10
+    avg_nodropoofs_4 = -10
+else:
+    avg_span_4 = round(spans[4] / no_customers_per_no_packages[4], 2)
+    avg_nodropoofs_4 = round(no_dropoffs[4] / no_packages_per_category[4], 2)
 
-#     for i in range(10): 
-    
 
-#         run_env(i, no_trucks, 2, no_drones, no_customers, p, load=False, load_file=None, strategy=strategy, save_state=True, drone_capacity = 10)    
-
+print(no_dropoffs[2])
+print(avg_nodropoofs_2)
 
 
+params['strategy'] = 'farthest_package_first'
+# run_env(6, no_trucks, None, no_drones, None, p, load=True, load_file = filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)
 
-#Before we begin the simulation we want to initialize the csv file which will store the results
+results = run_env(load_file=params['load_file'], strategy=params['strategy'], drone_capacity=params['drone_capacity'])
 
-with open('results/results.csv', 'w') as f:
-    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,A,drone_travel_distance,truck_travel_distance,X1,X2,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4,avg_nodropoffs_2,avg_nodropoffs_3,avg_nodropoffs_4\n')
+spans = results['spans']
+no_dropoffs = results['no_dropoffs']
 
+# Here we store the number of packages for each group of no_packages.
+# You get the idea :)
+no_packages_total = get_total_no_packages(filename)
+no_packages_per_category = get_no_packages_per_category(filename, spans.keys())
+no_customers_per_no_packages = get_no_customers_per_no_packages(filename, spans.keys())
+# This is to prevent division by 0 errors
+if no_packages_per_category[2] == 0:
+    avg_span_2 = -10
+    avg_nodropoofs_2 = -10
+else:
+    avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
+    avg_nodropoofs_2 = round(no_dropoffs[2] / no_packages_per_category[2], 2)
+if no_packages_per_category[3] == 0:
+    avg_span_3 = -10
+    avg_nodropoofs_3 = -10
+else:
+    avg_span_3 = round(spans[3] / no_customers_per_no_packages[3], 2)
+    avg_nodropoofs_3 = round(no_dropoffs[3] / no_packages_per_category[3], 2)
+if no_packages_per_category[4] == 0:
+    avg_span_4 = -10
+    avg_nodropoofs_4 = -10
+else:
+    avg_span_4 = round(spans[4] / no_customers_per_no_packages[4], 2)
+    avg_nodropoofs_4 = round(no_dropoffs[4] / no_packages_per_category[4], 2)
 
-drone_capacity_values = (1, 2, 3, 4) # We will be testing these values of drone_capacity in our simulation
-strategies = ('farthest_package_first_MPA', 'farthest_package_first', 'closest_package_first', 'most_packages_first')
-# strategies = ('farthest_package_first_MPA', 'farthest_package_first')
-for strategy in strategies:
-    print(strategy)
-    for drone_capacity in drone_capacity_values:
-        
-        for no_customers in no_customers_values:
-            for i in range(10):
-
-                print(drone_capacity, no_customers, i)
-                filename = path + 'saved_state_' + str(no_customers) + '_' + str(i) + '.txt'
-                params = {
-                    'load_file' : filename,
-                    'strategy' : strategy,
-                    'drone_capacity' : drone_capacity
-                }
-                results = run_env(load_file=params['load_file'], strategy=params['strategy'], drone_capacity=params['drone_capacity'])
-
-                spans = results['spans']
-                no_dropoffs = results['no_dropoffs']
-                
-                # Here we store the number of packages for each group of no_packages.
-                # You get the idea :)
-                no_packages_total = get_total_no_packages(filename)
-                no_packages_per_category = get_no_packages_per_category(filename, spans.keys())
-                no_customers_per_no_packages = get_no_customers_per_no_packages(filename, spans.keys())
-                # This is to prevent division by 0 errors
-                if no_packages_per_category[2] == 0:
-                    avg_span_2 = -10
-                    avg_nodropoofs_2 = -10
-                else:
-                    avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
-                    avg_nodropoofs_2 = round(no_dropoffs[2] / no_packages_per_category[2], 2)
-                    # avg_nodropoofs_2 = round(no_dropoffs[2] / no_customers_per_no_packages[2], 2)
-                if no_packages_per_category[3] == 0:
-                    avg_span_3 = -10
-                    avg_nodropoofs_3 = -10
-                else:
-                    avg_span_3 = round(spans[3] / no_customers_per_no_packages[3], 2)
-                    avg_nodropoofs_3 = round(no_dropoffs[3] / no_packages_per_category[3], 2)
-                    # avg_nodropoofs_3 = round(no_dropoffs[3] / no_customers_per_no_packages[3], 2)
-                if no_packages_per_category[4] == 0:
-                    avg_span_4 = -10
-                    avg_nodropoofs_4 = -10
-                else:
-                    avg_span_4 = round(spans[4] / no_customers_per_no_packages[4], 2)
-                    avg_nodropoofs_4 = round(no_dropoffs[4] / no_packages_per_category[4], 2)
-                    # avg_nodropoofs_4 = round(no_dropoffs[4] / no_customers_per_no_packages[4], 2)
-                save_result(i, strategy, (results['steps'][0], results['steps'][1], round(results['drone_travel_distance'], 2), round(results['truck_travel_distance'], 2), results['X1'], results['X2'], round(results['utilization'], 2) , round(results['total_package_waiting_time'] / no_packages_total, 2), round(results['total_customer_waiting_time'] / no_customers, 2), results['total_delay_time'], avg_span_2, avg_span_3, avg_span_4, avg_nodropoofs_2, avg_nodropoofs_3, avg_nodropoofs_4), (drone_capacity, no_customers))
+print(no_dropoffs[2])
+print(avg_nodropoofs_2)
