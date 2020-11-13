@@ -294,8 +294,7 @@ class custom_class(gym.Env):
             package.waiting_time += 1
 
 
-        drone.charge()
-        # print(drone.battery)
+        
         #TODO removed steadystate consumption
         if drone.waiting:
             drone.steadystate_consumption()
@@ -308,11 +307,11 @@ class custom_class(gym.Env):
         elif action == "deliver_next_package":
             if not drone.home_truck.is_moving:
                 drone.deliver_next_package(self.unserviced_customers)
-            else:
-                return
         elif action == "failsafe_mode":
             #TODO Do something???
             pass
+
+        drone.charge()  
 
 
     def _take_truck_action(self, truck, action):
