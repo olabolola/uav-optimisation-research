@@ -91,7 +91,7 @@ def run_env(run_number=0, no_trucks = 2, no_clusters = 2, no_drones = 3, no_cust
         if not done[1]:
             A += 1
 
-        # if render_cnt % 13 == 0:
+        # if render_cnt % 17 == 0:
         #     env.render()
         # render_cnt += 1
 
@@ -124,7 +124,7 @@ def run_env(run_number=0, no_trucks = 2, no_clusters = 2, no_drones = 3, no_cust
             no_dropoffs = {2:0,3:0,4:0} 
 
             # How many times drones were prevented from leaving the truck due to battery constraints
-            no_preventions = {'first_preventions': 0, 'total_preventions': 0}
+            no_preventions = 0
             
 
             drones = obs[1][0]
@@ -140,8 +140,7 @@ def run_env(run_number=0, no_trucks = 2, no_clusters = 2, no_drones = 3, no_cust
                 drone_travel_distance += drone.total_travel_distance
                 X2 += drone.total_active_time
                 total_delay_time += drone.total_delay_time
-                no_preventions['first_preventions'] += drone.no_preventions['first_preventions']
-                no_preventions['total_preventions'] += drone.no_preventions['total_preventions']
+                no_preventions += drone.no_preventions
             
             for truck in trucks:
                 total_package_waiting_time += truck.total_package_waiting_time
@@ -185,8 +184,8 @@ p = [0.85, 0.09, 0.04, 0.02]
 path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
 
 # This is just for testing
-# drone_capacity = 3
-# filename = path + 'saved_state_50_1.txt'
+# drone_capacity = 1
+# filename = path + 'saved_state_200_0.txt'
 # strategy = 'farthest_package_first'
 # run_env(6, no_trucks, None, no_drones, None, p, load=True, load_file = filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)
 
@@ -208,7 +207,7 @@ no_customers_values = (50, 100, 200, 500)
 #Before we begin the simulation we want to initialize the csv file which will store the results
 
 with open('results/results.csv', 'w') as f:
-    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,package_delivery_time,drone_travel_distance,truck_travel_distance,total_cluster_time,total_active_time,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4,avg_nodropoffs_2,avg_nodropoffs_3,avg_nodropoffs_4,no_preventions_first,no_preventions_total\n')
+    f.write('strategy,scenario_id,drone_capacity,no_customers,total_time,package_delivery_time,drone_travel_distance,truck_travel_distance,total_cluster_time,total_active_time,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4,avg_nodropoffs_2,avg_nodropoffs_3,avg_nodropoffs_4,no_preventions\n')
 
 
 start = timeit.default_timer()
@@ -262,7 +261,7 @@ for strategy in strategies:
                     avg_span_4 = round(spans[4] / no_customers_per_no_packages[4], 2)
                     avg_nodropoofs_4 = round(no_dropoffs[4] / no_packages_per_category[4], 2)
                     # avg_nodropoofs_4 = round(no_dropoffs[4] / no_customers_per_no_packages[4], 2)
-                save_result(i, strategy, (results['steps'][0], results['steps'][1], round(results['drone_travel_distance'], 2), round(results['truck_travel_distance'], 2), results['X1'], results['X2'], round(results['utilization'], 2) , round(results['total_package_waiting_time'] / no_packages_total, 2), round(results['total_customer_waiting_time'] / no_customers, 2), results['total_delay_time'], avg_span_2, avg_span_3, avg_span_4, avg_nodropoofs_2, avg_nodropoofs_3, avg_nodropoofs_4, results['no_preventions']['first_preventions'], results['no_preventions']['total_preventions']), (drone_capacity, no_customers))
+                save_result(i, strategy, (results['steps'][0], results['steps'][1], round(results['drone_travel_distance'], 2), round(results['truck_travel_distance'], 2), results['X1'], results['X2'], round(results['utilization'], 2) , round(results['total_package_waiting_time'] / no_packages_total, 2), round(results['total_customer_waiting_time'] / no_customers, 2), results['total_delay_time'], avg_span_2, avg_span_3, avg_span_4, avg_nodropoofs_2, avg_nodropoofs_3, avg_nodropoofs_4, results['no_preventions']), (drone_capacity, no_customers))
 
 
 stop = timeit.default_timer()

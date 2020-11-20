@@ -46,7 +46,7 @@ df.strategy = df.strategy.replace('closest_package_first', 'CPF')
 df.strategy = df.strategy.replace('most_packages_first', 'MPF')
 df.strategy = df.strategy.replace('farthest_package_first_MPA', 'FPF_MPA')
 df.strategy = df.strategy.replace('farthest_package_first_MPA_x', 'FPF_MPA_x')
-cols = ['total_time', 'package_delivery_time', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time', 'total_delay_time', 'avg_span_2', 'avg_span_3', 'avg_span_4', 'avg_nodropoffs_2', 'avg_nodropoffs_3', 'avg_nodropoffs_4', 'no_preventions_first', 'no_preventions_total']
+cols = ['total_time', 'package_delivery_time', 'drone_travel_distance', 'utilization', 'avg_package_wait_time', 'avg_customer_wait_time', 'total_delay_time', 'avg_span_2', 'avg_span_3', 'avg_span_4', 'avg_nodropoffs_2', 'avg_nodropoffs_3', 'avg_nodropoffs_4', 'no_preventions']
 bies = ['drone_capacity', 'no_customers']
 
 df.avg_span_2 = df.avg_span_2.replace([-10], np.nan)
