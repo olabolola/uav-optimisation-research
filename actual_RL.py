@@ -186,7 +186,7 @@ path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV 
 # This is just for testing
 # drone_capacity = 1
 # filename = path + 'saved_state_200_0.txt'
-# strategy = 'farthest_package_first'
+# strategy = 'farthest_package_first_MPA'
 # run_env(6, no_trucks, None, no_drones, None, p, load=True, load_file = filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)
 
 #Generate the 40 test files

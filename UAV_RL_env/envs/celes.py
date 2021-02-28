@@ -476,12 +476,7 @@ class Truck:
         
         #In this strategy we load the drone farthest away from the truck then next closest to that package and so on.
         if self.strategy == 'farthest_package_first':
-            xx = 0
             while drone.no_packages < drone.capacity:
-                xx += 1
-                if xx > 100:
-                    # print(drone.no_packages, drone.battery)
-                    print(len(self.packages[self.current_cluster]))
                 if drone.no_packages == 0:
                     if len(self.packages[self.current_cluster]) > 0:
                         package_to_deliver = self.packages[self.current_cluster][0]
@@ -660,14 +655,14 @@ class Truck:
             
 
             if drone.no_packages == 0:
-                if len(self.packages[self.current_cluster])> 0:
+                if len(self.packages[self.current_cluster]) > 0:
                     # The first package we deliver will be the one farthest away
                     package_to_deliver = self.packages[self.current_cluster][0]
                     
                     total_delivery_distance += get_euclidean_distance(self.position, package_to_deliver.customer.position)
 
                     # If we can reach the customer and come back we load all their packages
-                    if total_delivery_distance * 2 + 120 * drone.passive_battery_consume <= drone.get_range_of_reach():
+                    if total_delivery_distance * 2 + 120 * drone.passive_battery_consume <= drone.get_max_range():
                         
                         drone.no_customers_in_list += 1
 
@@ -685,9 +680,10 @@ class Truck:
                                 self.no_packages -= 1
                 else:
                     return
+            
             if len(self.packages[self.current_cluster]) > 0 and drone.no_packages != 0:
-                # We enter here if the drone already has packages on it
 
+                # We enter here if the drone already has packages on it
                 while drone.capacity != drone.no_packages:
                     # Here we make a list of packages sorted according to the distance from the last package (ascending)
                     packages_new = sorted(self.packages[self.current_cluster], key = lambda x : get_euclidean_distance(x.customer.position, drone.packages[-1].customer.position), reverse=True)
@@ -739,6 +735,7 @@ class Truck:
             else:
                 drone.this_delivery_distance = total_delivery_distance
                 return
+
         drone.this_delivery_distance = total_delivery_distance
                         
     def add_cluster_centroid(self, pos):
