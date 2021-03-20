@@ -2,6 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Setting font parameters
+# font = {'family' : 'normal',
+#         'size'   : 9}
+
+# plt.rc('font', **font)
+
+plt.tight_layout()
+
 colors = ['#727272', '#f1595f', '#79c36a', '#599ad3']
 
 def plot_by_X(df, by, mean_value_col, save = False):
@@ -22,12 +30,10 @@ def plot_by_X(df, by, mean_value_col, save = False):
         df_plot = pd.DataFrame(mean_values, index = no_customer_values)
     elif by == 'drone_capacity':
         df_plot = pd.DataFrame(mean_values, index = drone_capacity_values)
-        
-    # # print(mean_values)
-    # # print(df_plot)
     df_plot.plot(kind='bar', rot=0, color = colors)
     plt.ylabel(mean_value_col)
     plt.xlabel(by)
+    plt.legend(loc='lower right')
     if save:
         path = 'figures/'
         filename = f'{by} vs {mean_value_col} for each strategy'
@@ -39,7 +45,7 @@ def plot_by_X(df, by, mean_value_col, save = False):
 
 
 
-df = pd.read_csv('results/results.csv')
+df = pd.read_csv('results/results - wait for capacity.csv')
 
 df.strategy = df.strategy.replace('farthest_package_first', 'FPF')
 df.strategy = df.strategy.replace('closest_package_first', 'CPF')

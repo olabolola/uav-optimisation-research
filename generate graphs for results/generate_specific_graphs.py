@@ -1,6 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+
+
+# Setting font parameters
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 12}
+
+plt.rc('font', **font)
+
 
 colors = ['#727272', '#f1595f', '#79c36a', '#599ad3']
 no_customer_values = (50, 100, 200, 500)
@@ -12,6 +22,7 @@ def plot_by_X(df, mean_value_col, save = False):
     for strategy in strategies:
         mean_values.append(df[df.strategy == strategy][mean_value_col].mean())
     plt.bar(strategies, mean_values, color = colors)
+
     # print(mean_values)
     # plt.show()
     # df_plot = pd.DataFrame(mean_values)
@@ -86,6 +97,8 @@ strategies = ['FPF', 'FPF_MPA', 'CPF', 'MPF']
 # for col in cols:
 #     plot_by_X(df, col, save=True)
 
-for col in cols:
-    for by in ('no_customers', 'drone_capacity'):
-        plot_by_X2(df, col, by = by, save=True)
+# for col in cols:
+#     for by in ('no_customers', 'drone_capacity'):
+#         plot_by_X2(df, col, by = by, save=True)
+
+plot_by_X2(df, 'total_time', by = 'no_customers', save=False)

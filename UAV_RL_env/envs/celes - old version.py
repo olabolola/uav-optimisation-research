@@ -548,7 +548,9 @@ class Truck:
 
                             drone.no_customers_in_list += 1
                         else:
-                            drone.no_preventions += 1
+                            if drone.first_prevent:
+                                drone.first_prevent = False
+                                drone.no_preventions += 1
                             return
 
                 elif len(self.packages[self.current_cluster]) > 0:
@@ -617,7 +619,9 @@ class Truck:
                                 #Indicate that we have taken the package from the truck but have not delivered it yet
                                 p.customer.quasi_no_packages -= 1
                     else:
-                        drone.no_preventions += 1
+                        if drone.first_prevent:
+                                drone.first_prevent = False
+                                drone.no_preventions += 1
                         return
                         
             #sort packages dictionary by number of packages
@@ -688,7 +692,9 @@ class Truck:
                                 self.no_packages -= 1
 
                     else:
-                        drone.no_preventions += 1
+                        if drone.first_prevent:
+                                drone.first_prevent = False
+                                drone.no_preventions += 1
                         return
 
             if len(self.packages[self.current_cluster]) > 0 and drone.no_packages != 0:

@@ -181,7 +181,7 @@ no_drones = 3
 p = [0.85, 0.09, 0.04, 0.02]
 
 #This is the directory where our saved states are saved
-path = r'C:\Users\leola\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization (1)\For_me\Testing-UAV-code\saved_states\\'
+path = r'C:\Users\Saleh\Google Drive (salihjasimnz@gmail.com)\PSUT\Research\UAV optimization\For_me\Testing-UAV-code\saved_states\\'
 
 # This is just for testing
 # drone_capacity = 1
@@ -214,7 +214,6 @@ start = timeit.default_timer()
 
 drone_capacity_values = (1, 2, 3, 4) # We will be testing these values of drone_capacity in our simulation
 strategies = ('farthest_package_first_MPA', 'farthest_package_first', 'closest_package_first', 'most_packages_first')
-# strategies = ('farthest_package_first_MPA', 'farthest_package_first')
 for strategy in strategies:
     print(strategy)
     for drone_capacity in drone_capacity_values:
