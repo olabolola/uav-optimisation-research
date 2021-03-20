@@ -16,7 +16,7 @@ colors = ['#727272', '#f1595f', '#79c36a', '#599ad3']
 no_customer_values = (50, 100, 200, 500)
 drone_capacity_values = (1, 2, 3, 4)
 
-def get_average_no_dropoffs_per_strategy(df, save = False):
+def get_average_no_dropoffs_per_strategy(df, mean_value_col, by, save = False):
     mean_values = {}
 
     mean_values['Average nodropoffs 2'] = []
@@ -124,4 +124,3 @@ for col in cols:
     print(col)
     print(df_bad[col].mean())
     print(df_good[col].mean())
-    # print(df_a[col].mean())

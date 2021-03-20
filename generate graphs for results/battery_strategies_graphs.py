@@ -4,69 +4,39 @@ import pandas as pd
 import seaborn as sns
 
 
-# Setting font parameters
-font = {'family' : 'normal',
-        'weight' : 'bold',
-        'size'   : 12}
-
-plt.rc('font', **font)
 
 
-colors = ['#727272', '#f1595f', '#79c36a', '#599ad3']
+colors = ['#727272', '#599ad3']
 no_customer_values = (50, 100, 200, 500)
 drone_capacity_values = (1, 2, 3, 4)
 
-def get_average_no_dropoffs_per_strategy(df, save = False):
+def get_battery_strategy_vs_noc_and_dc(mean_value_col, by, save = False):
     mean_values = {}
 
-    mean_values['Average nodropoffs 2'] = []
-    mean_values['Average nodropoffs 3'] = []
-    mean_values['Average nodropoffs 4'] = []
+    mean_values['launch immediately'] = []
+    mean_values['wait for capacity'] = []
 
-    
-    
-    for strategy in strategies:
-        mean_values['Average nodropoffs 2'].append(df[df.strategy == strategy]['avg_nodropoffs_2'].mean())
-        mean_values['Average nodropoffs 3'].append(df[df.strategy == strategy]['avg_nodropoffs_3'].mean())
-        mean_values['Average nodropoffs 4'].append(df[df.strategy == strategy]['avg_nodropoffs_4'].mean())
+    if by == 'no_customers':
+        for no_customers in no_customer_values:
+            mean_values['launch immediately'].append(df_bad[(df_bad.no_customers == no_customers) & (df_bad.strategy == 'FPF_MPA')][mean_value_col].mean())
+            mean_values['wait for capacity'].append(df_good[(df_good.no_customers == no_customers) & (df_good.strategy == 'FPF_MPA')][mean_value_col].mean())
+    elif by == 'drone_capacity':
+        for drone_capacity in drone_capacity_values:
+            mean_values['launch immediately'].append(df_bad[(df_bad.drone_capacity == drone_capacity) & (df_bad.strategy == 'FPF_MPA')][mean_value_col].mean())
+            mean_values['wait for capacity'].append(df_good[(df_good.drone_capacity == drone_capacity) & (df_good.strategy == 'FPF_MPA')][mean_value_col].mean())
 
-    df_plot = pd.DataFrame(mean_values, index=strategies)
+    if by == 'no_customers':
+        df_plot = pd.DataFrame(mean_values, index = no_customer_values)
+    elif by == 'drone_capacity':
+        df_plot = pd.DataFrame(mean_values, index = drone_capacity_values)
     df_plot.plot(kind='bar', rot=0, color = colors)
-
+    plt.ylabel(mean_value_col)
+    plt.xlabel(by)
     plt.legend(loc='lower right')
-    plt.xlabel('Strategies')   
-    plt.ylabel('Average number of dropoffs')
     if save:
         path = 'figures/'
-        filename = f'Average number of dropoffs for every strategy'
+        filename = f'{by} vs {mean_value_col} for each strategy'
         plt.savefig(path + filename)
-        plt.close()
-    else:
-        plt.show()
-def get_average_spans_per_strategy(df, save = False):
-    mean_values = {}
-
-    mean_values['Average span 2'] = []
-    mean_values['Average span 3'] = []
-    mean_values['Average span 4'] = []
-
-    
-    
-    for strategy in strategies:
-        mean_values['Average span 2'].append(df[df.strategy == strategy]['avg_span_2'].mean())
-        mean_values['Average span 3'].append(df[df.strategy == strategy]['avg_span_3'].mean())
-        mean_values['Average span 4'].append(df[df.strategy == strategy]['avg_span_4'].mean())
-
-    df_plot = pd.DataFrame(mean_values, index=strategies)
-    df_plot.plot(kind='bar', rot=0, color = colors)
-
-    plt.xlabel('Strategies')   
-    plt.ylabel('Average spans')
-    if save:
-        path = 'figures/'
-        filename = f'Average spans for every strategy'
-        plt.savefig(path + filename)
-        plt.close()
     else:
         plt.show()
 
@@ -108,17 +78,14 @@ df_good.avg_nodropoffs_4 = df_good.avg_nodropoffs_4.replace([-10], np.nan)
 
 strategies = ['FPF', 'FPF_MPA', 'CPF', 'MPF']
 
-# for col in cols:
-#     plot_by_X(df, col, save=True)
-
-# for col in cols:
-#     for by in ('no_customers', 'drone_capacity'):
-#         plot_by_X2(df, col, by = by, save=True)
-
-# get_average_spans_per_strategy(df, save=True)
-# get_average_no_dropoffs_per_strategy(df, save=True)
-# print(df.head())
 
 for col in cols:
-    print(df_bad.total_time.mean())
-    print(df_good.total_time.mean())
+    for by in ('no_customers', 'drone_capacity'):
+        get_battery_strategy_vs_noc_and_dc(col, by = by, save=True)
+
+
+# for col in cols:
+#     print(df_bad.total_time.mean())
+#     print(df_good.total_time.mean())
+
+# get_battery_strategy_vs_noc_and_dc('total_time', 'drone_capacity', save=False)
