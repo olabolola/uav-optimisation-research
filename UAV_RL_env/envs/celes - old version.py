@@ -525,6 +525,9 @@ class Truck:
                         drone.no_customers_in_list += already
 
                     else:
+                        if drone.first_prevent:
+                            drone.first_prevent = False
+                            drone.no_preventions += 1
                         return
         #In this strategy we load the package closest to the truck, then closest to that package and so on.
         elif self.strategy == 'closest_package_first':
@@ -580,6 +583,9 @@ class Truck:
 
                         drone.no_customers_in_list += already
                     else:
+                        if drone.first_prevent:
+                            drone.first_prevent = False
+                            drone.no_preventions += 1
                         return
         #Here we load the package for the customer with the highest number of packages, then the closest package to that and so on.                    
         elif self.strategy=='most_packages_first':
@@ -663,6 +669,9 @@ class Truck:
 
                             drone.no_customers_in_list += already
                         else:
+                            if drone.first_prevent:
+                                drone.first_prevent = False
+                                drone.no_preventions += 1
                             return
 
         elif self.strategy == 'farthest_package_first_MPA':
@@ -743,6 +752,9 @@ class Truck:
                             if package.customer.quasi_no_packages == 0:
                                 break
                         else:
+                            if drone.first_prevent:
+                                drone.first_prevent = False
+                                drone.no_preventions += 1
                             return
 
                         

@@ -81,7 +81,7 @@ strategies = ['FPF', 'FPF_MPA', 'CPF', 'MPF']
 
 for col in cols:
     for by in ('no_customers', 'drone_capacity'):
-        get_battery_strategy_vs_noc_and_dc(col, by = by, save=True)
+        get_battery_strategy_vs_noc_and_dc(col, by = by, save=False)
 
 
 # for col in cols:
