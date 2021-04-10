@@ -214,6 +214,7 @@ start = timeit.default_timer()
 
 drone_capacity_values = (1, 2, 3, 4) # We will be testing these values of drone_capacity in our simulation
 strategies = ('farthest_package_first_MPA', 'farthest_package_first', 'closest_package_first', 'most_packages_first')
+# strategies = ('farthest_package_first',)
 for strategy in strategies:
     print(strategy)
     for drone_capacity in drone_capacity_values:
