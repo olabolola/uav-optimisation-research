@@ -100,7 +100,7 @@ def run_env(
     truck_actions = []
     drone_actions = []
 
-    for i in range(no_trucks):
+    for _ in range(no_trucks):
         truck_actions.append("go_to_next_cluster")
         for _ in range(no_drones):
             drone_actions.append("deliver_next_package")

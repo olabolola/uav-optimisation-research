@@ -1,11 +1,5 @@
-import gym
-from gym import error, spaces, utils
-from gym.utils import seeding
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.cluster import KMeans
-import random
 
 try:
     from . import celes
