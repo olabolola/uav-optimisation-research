@@ -10,13 +10,7 @@ import gym
 
 
 import timeit
-import os
-import UAV_RL_env
-import UAV_RL_env.envs.celes as celes
-import numpy as np
-import numpy as np
 import random
-import time
 
 
 random.seed(42)
