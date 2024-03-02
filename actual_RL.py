@@ -1,12 +1,7 @@
-import gym
-
+# TODO convert to gymnasium
 # import gymnasium as gym
-# import gym_miniworld
-
-# env_dict = gym.envs.registration.registry.EnvSpec.copy()
-# for env in env_dict:
-#     if "HDS" in env:
-#         del gym.env_spec.registration.registry.EnvSpec[env]
+import gym
+from gym.envs.registration import register
 
 
 import timeit
@@ -14,6 +9,11 @@ import random
 
 
 random.seed(42)
+
+register(
+    id="HDS-v1",
+    entry_point="UAV_RL_env.envs:custom_class",
+)
 
 
 def get_no_packages_per_category(filename, keys):
@@ -81,7 +81,7 @@ def run_env(
 ):
 
     env = gym.make(
-        "HDS-v0",
+        "HDS-v1",
         no_customers=no_customers,
         no_trucks=no_trucks,
         no_drones=no_drones,
