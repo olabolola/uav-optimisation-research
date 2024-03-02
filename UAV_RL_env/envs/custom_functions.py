@@ -131,32 +131,28 @@ class custom_class(gym.Env):
     # This function load the customer positions and number of packages for each customer
 
     def load_from_file(self):
+        with open(self.load_file, "a+") as file:
+            lines = file.readlines()
+            self.no_customers = len(lines) - 1
 
-        lines = open(self.load_file, "a+").readlines()
-        self.no_customers = len(lines) - 1
+            if self.no_customers == 50:
+                self.no_clusters = 2
+            else:
+                self.no_clusters = max(1, self.no_customers // 50)
 
-        if self.no_customers == 50:
-            self.no_clusters = 2
-        else:
-            self.no_clusters = int(self.no_customers / 50)
+            for line in lines[1:]:
+                x_coord, y_coord, no_packages = line.split(", ")
+                x_coord = int(x_coord)
+                y_coord = int(y_coord)
+                no_packages = int(no_packages)
+                customer_position = celes.Position(x_coord, y_coord)
+                customer = celes.Customer(customer_position, "apt")
 
-        # TODO check shenanigans here
-        if self.no_clusters == 0:
-            self.no_clusters = 1
+                for _ in range(no_packages):
+                    package = celes.Package(customer)
+                    customer.add_package(package)
 
-        for line in lines[1:]:
-            x_coord, y_coord, no_packages = line.split(", ")
-            x_coord = int(x_coord)
-            y_coord = int(y_coord)
-            no_packages = int(no_packages)
-            customer_position = celes.Position(x_coord, y_coord)
-            customer = celes.Customer(customer_position, "apt")
-
-            for _ in range(no_packages):
-                package = celes.Package(customer)
-                customer.add_package(package)
-
-            self.customers.append(customer)
+                self.customers.append(customer)
 
     def reset(self):
 
@@ -230,12 +226,7 @@ class custom_class(gym.Env):
         if self.save_state:
 
             with open(
-                "saved_states/saved_state"
-                + "_"
-                + str(self.no_customers)
-                + "_"
-                + str(self.file_suffix)
-                + ".txt",
+                f"saved_states/saved_state_{self.no_customers}_{self.file_suffix}.txt",
                 "w",
             ) as f:
                 f.write("x_coordinate,y_coordinate,no_packages\n")

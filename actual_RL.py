@@ -1,11 +1,10 @@
+import timeit
+import random
+
 # TODO convert to gymnasium
 # import gymnasium as gym
 import gym
 from gym.envs.registration import register
-
-
-import timeit
-import random
 
 
 random.seed(42)
@@ -17,31 +16,34 @@ register(
 
 
 def get_no_packages_per_category(filename, keys):
-    f = open(filename).readlines()
     no_packages_per_category = {no: 0 for no in keys}
-    for line in f[1:]:
-        no_packages = int(line.split(",")[-1])
-        if no_packages > 1:
-            no_packages_per_category[no_packages] += no_packages
+    with open(filename) as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            no_packages = int(line.split(",")[-1])
+            if no_packages > 1:
+                no_packages_per_category[no_packages] += no_packages
     return no_packages_per_category
 
 
 def get_no_customers_per_no_packages(filename, keys):
-    f = open(filename).readlines()
     no_customers_per_no_packages = {no: 0 for no in keys}
-    for line in f[1:]:
-        no_packages = int(line.split(",")[-1])
-        if no_packages > 1:
-            no_customers_per_no_packages[no_packages] += 1
+    with open(filename) as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            no_packages = int(line.split(",")[-1])
+            if no_packages > 1:
+                no_customers_per_no_packages[no_packages] += 1
     return no_customers_per_no_packages
 
 
 def get_total_no_packages(filename):
-    f = open(filename).readlines()
     total_no_packages = 0
-    for line in f[1:]:
-        no_packages = int(line.split(",")[-1])
-        total_no_packages += no_packages
+    with open(filename) as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            no_packages = int(line.split(",")[-1])
+            total_no_packages += no_packages
     return total_no_packages
 
 
@@ -50,19 +52,7 @@ def save_result(scenario_id, strategy, results, information):
 
     with open("results/results.csv", "a") as f:
 
-        print_string = (
-            strategy
-            + ","
-            + str(scenario_id)
-            + ","
-            + str(information[0])
-            + ","
-            + str(information[1])
-            + ","
-        )
-        results_as_str = [str(res) for res in results]
-        print_string += ",".join(results_as_str)
-        print_string += "\n"
+        print_string = f"{strategy},{scenario_id},{information[0]},{information[1]},{','.join(str(res) for res in results)}\n"
         f.write(print_string)
 
 
