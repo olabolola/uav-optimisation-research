@@ -237,11 +237,9 @@ no_customers_values = (50, 100, 200, 500)
 
 
 # Before we begin the simulation we want to initialize the csv file which will store the results
-
+columns = "strategy,scenario_id,drone_capacity,no_customers,total_time,package_delivery_time,drone_travel_distance,truck_travel_distance,total_cluster_time,total_active_time,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4,avg_nodropoffs_2,avg_nodropoffs_3,avg_nodropoffs_4,no_preventions\n"
 with open("results/results.csv", "w") as f:
-    f.write(
-        "strategy,scenario_id,drone_capacity,no_customers,total_time,package_delivery_time,drone_travel_distance,truck_travel_distance,total_cluster_time,total_active_time,utilization,avg_package_wait_time,avg_customer_wait_time,total_delay_time,avg_span_2,avg_span_3,avg_span_4,avg_nodropoffs_2,avg_nodropoffs_3,avg_nodropoffs_4,no_preventions\n"
-    )
+    f.write(columns)
 
 
 start = timeit.default_timer()
@@ -252,13 +250,14 @@ drone_capacity_values = (
     3,
     4,
 )  # We will be testing these values of drone_capacity in our simulation
+
 strategies = (
     "farthest_package_first_MPA",
     "farthest_package_first",
     "closest_package_first",
     "most_packages_first",
 )
-# strategies = ('farthest_package_first',)
+
 for strategy in strategies:
     print(strategy)
     for drone_capacity in drone_capacity_values:
