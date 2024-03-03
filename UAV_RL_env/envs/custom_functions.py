@@ -1,11 +1,12 @@
+from typing import List, Tuple
+
 import numpy as np
 import gym
 import matplotlib.pyplot as plt
 
-try:
-    from . import celes
-except ModuleNotFoundError:
-    import celes
+
+from . import celes
+from .celes import Drone, Truck
 
 # Width and height of the grid on witch our customers live
 
@@ -17,17 +18,17 @@ class custom_class(gym.Env):
 
     def __init__(
         self,
-        no_customers,
-        no_trucks,
-        no_drones,
-        no_clusters,
-        file_suffix,
-        p,
-        load,
-        load_file,
-        strategy,
-        save_state,
-        drone_capacity,
+        no_customers: int,
+        no_trucks: int,
+        no_drones: int,
+        no_clusters: int,
+        file_suffix: str,
+        p: List[int],
+        load: bool,
+        load_file: str,
+        strategy: str,
+        save_state: bool,
+        drone_capacity: int,
     ):
 
         # Indicates if we want to save our run or not
@@ -82,7 +83,7 @@ class custom_class(gym.Env):
         # 2) When all the packages are delivered
         self.done = [False, False]
 
-    def step(self, actions):
+    def step(self, actions: Tuple[List[str], ...]):
 
         # actions is a list containing two elements; a list of truck actions and a list of drone actions
         # for each truck and drone respectively
@@ -238,7 +239,7 @@ class custom_class(gym.Env):
                         + "\n"
                     )
 
-    def render(self, mode="human", close=False):
+    def render(self, mode: str = "human", close: bool = False):
 
         customer_x = []
         customer_y = []
@@ -280,7 +281,7 @@ class custom_class(gym.Env):
 
         plt.show()
 
-    def _take_drone_action(self, drone, action):
+    def _take_drone_action(self, drone: Drone, action: str):
 
         # Each step we want to add 1 to the waiting time of the packages
         for package in drone.packages:
@@ -304,7 +305,7 @@ class custom_class(gym.Env):
 
         drone.charge()
 
-    def _take_truck_action(self, truck, action):
+    def _take_truck_action(self, truck: Truck, action: str):
 
         # Each step we want to add 1 to the waiting time of the packages
         for cluster_packages in truck.packages.values():

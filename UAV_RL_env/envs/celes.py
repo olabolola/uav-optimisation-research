@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import List, Optional, Tuple
+
 from sklearn.cluster import KMeans
 import pandas as pd
 
@@ -6,14 +9,14 @@ class Drone:
 
     def __init__(
         self,
-        position,
-        home_truck=None,
-        active_battery_consume=0.05,
-        passive_battery_consume=0.005,
-        drone_speed=10,
-        battery=100,
+        position: Position,
+        home_truck: Optional[Truck] = None,
+        active_battery_consume: float = 0.05,
+        passive_battery_consume: float = 0.005,
+        drone_speed: int = 10,
+        battery: float = 100,
         drone_id=None,
-        capacity=2,
+        capacity: int = 2,
     ):
 
         # The capacity of the drone is the maximum number of packages it can carry at the same time
@@ -109,7 +112,7 @@ class Drone:
             # Here we add the distance travelled now to the total distance travelled
             self.total_travel_distance += distance_traveled
 
-    def go_to_position(self, position):
+    def go_to_position(self, position: Position):
         """
         This function moves the drone towards a certain position.
         If we reach the destination we return True, otherwise we return false
@@ -142,7 +145,7 @@ class Drone:
             return False
         return False
 
-    def consume_battery(self, distance):
+    def consume_battery(self, distance: float):
         """
         This function is called whenever the drone moves.
         We subtract self.active_battery_consume for each unit of distance it travelled
@@ -175,7 +178,7 @@ class Drone:
     def get_max_range(self):
         return (100 / self.active_battery_consume) * self.drone_speed
 
-    def deliver_next_package(self, unserviced_customers):
+    def deliver_next_package(self, unserviced_customers: List[Customer]):
         """
         Move towards the next customer in our list.
         If we have no more customers to deliver to we go_to_home_truck()
@@ -288,7 +291,9 @@ class Drone:
 
 class Package:
 
-    def __init__(self, customer, mass=10, height=5, width=5):
+    def __init__(
+        self, customer: Customer, mass: float = 10, height: float = 5, width: float = 5
+    ):
         self.customer = customer
         self.mass = mass
         self.height = height
@@ -298,7 +303,7 @@ class Package:
 
 class Position:
 
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int):
         # Suppose the location of a truck, drone or house is defined by (x, y)
         self.x = x
         self.y = y
@@ -313,13 +318,13 @@ class Position:
     def __repr__(self):
         return str(self)
 
-    def __eq__(self, pos):
+    def __eq__(self, pos: Position):
         return self.x == pos.x and self.y == pos.y
 
-    def __ne__(self, pos):
+    def __ne__(self, pos: Position):
         return not self.__eq__(pos)
 
-    def __sub__(self, position2):
+    def __sub__(self, position2: Position):
         return Position(self.x - position2.x, self.y - position2.y)
 
     def _normalize_position(self):
@@ -336,7 +341,7 @@ class Position:
     # 2) Normalize v --> u
     # 3) new position = position1 + du
 
-    def get_point_on_line(self, position2, distance):
+    def get_point_on_line(self, position2: Position, distance: float):
         """
         In this function we move a distance of "distance" towards position2.
         We return the distance travelled.
@@ -354,7 +359,9 @@ class Position:
 
 class Customer:
 
-    def __init__(self, position, residence_type, no_of_packages=0):
+    def __init__(
+        self, position: Position, residence_type: str, no_of_packages: int = 0
+    ):
         # Location will be a class of type position (defined by x and y)
         self.position = position
         # residence_type will just be a string ("apt" or "house")
@@ -386,7 +393,7 @@ class Customer:
         d["no_of_packages"] = self.no_of_packages
         return d
 
-    def add_package(self, package):
+    def add_package(self, package: Package):
         """
         This function adds a package to our customer
         """
@@ -403,12 +410,12 @@ class Truck:
     # We might just want to inherit from a superclass...
     def __init__(
         self,
-        position,
-        cost=0.0006,
-        truck_speed=8,
-        truck_id=None,
-        total_no_drones=0,
-        strategy="next_closest",
+        position: Position,
+        cost: float = 0.0006,
+        truck_speed: float = 8,
+        truck_id: Optional[int] = None,
+        total_no_drones: int = 0,
+        strategy: str = "next_closest",
     ):
 
         # Strategy parameters
@@ -452,7 +459,7 @@ class Truck:
         # Here we store the total time this truck spent in a cluster
         self.total_time_in_cluster = 0
 
-    def load_package(self, package, cluster):
+    def load_package(self, package: Package, cluster: Tuple[int, ...]):
         """
         This function adds a package to the cluster list specified in the truck dict.
         If the cluster doesnt exist we add the cluster to the dict and then add the package
@@ -462,7 +469,7 @@ class Truck:
         self.packages[cluster].append(package)
         self.no_packages += 1
 
-    def sort_packages(self, how):
+    def sort_packages(self, how: str):
         """
         In this function we sort the packages in the truck dict either according to:
             1) The distance from the center of the cluster, or
@@ -471,21 +478,23 @@ class Truck:
         if (
             how == "distance"
         ):  # Here we sort the packages according to the distance from the center of the cluster
-            for cluster in self.packages.keys():
+
+            for cluster, package_list in self.packages.items():
                 cluster_position = Position(cluster[0], cluster[1])
                 self.packages[cluster] = sorted(
-                    self.packages[cluster],
+                    package_list,
                     key=lambda x: get_euclidean_distance(
                         x.customer.position, cluster_position
                     ),
                     reverse=True,
                 )
+
         elif (
             how == "no_packages"
         ):  # Here we sort the packages according to the number of packages of the customer
-            for cluster in self.packages.keys():
+            for cluster, package_list in self.packages.items():
                 self.packages[cluster] = sorted(
-                    self.packages[cluster],
+                    package_list,
                     key=lambda x: (
                         x.customer.quasi_no_packages,
                         x.customer.position.x,
@@ -494,7 +503,7 @@ class Truck:
                 )
 
     # Here we load until max capacity
-    def load_drone_package(self, drone):
+    def load_drone_package(self, drone: Drone):
         """
         In this function we assign packages to a drone according the strategy we have specified in self.strategy.
         """
@@ -949,11 +958,11 @@ class Truck:
 
         drone.this_delivery_distance = total_delivery_distance
 
-    def add_cluster_centroid(self, pos):
+    def add_cluster_centroid(self, pos: Tuple[int, ...]):
         """
         Here we add one of our cluster centroids to the list of cluster centroids on the truck as a tuple
         """
-        self.cluster_centroids.append(tuple(pos))
+        self.cluster_centroids.append(pos)
 
     def get_truck_info(self):
         d = self.position.get_position_info()
@@ -962,7 +971,7 @@ class Truck:
         d["no_of_drones"] = self.no_of_drones
         return d
 
-    def move_towards_position(self, position):
+    def move_towards_position(self, position: Position):
         """
         In this function we move the truck towards "position" in a manhattan manner (straight lines only).
         We return True if the truck reached the destination and False otherwise
@@ -1079,7 +1088,7 @@ class Truck:
 
         return drones_delivered
 
-    def load_drone(self, drone):
+    def load_drone(self, drone: Drone):
         """
         In this function we load a drone onto the truck
         """
@@ -1094,10 +1103,12 @@ class Truck:
 
 
 class Warehouse:
-    def __init__(self, position):
+    def __init__(self, position: Position):
         self.position = position
 
-    def cluster_and_colour(self, customers, trucks, no_clusters):
+    def cluster_and_colour(
+        self, customers: List[Customer], trucks: List[Truck], no_clusters: int
+    ):
         """
         In this function we cluster our customers using KMeans and assign them a colour.
         We also assign the trucks to the clusters and assign the packages to the trucks.
@@ -1150,7 +1161,7 @@ class Warehouse:
         # Here we distribute the clusters to the trucks
         i = 0
         for j in range(no_clusters):
-            trucks[i].add_cluster_centroid(centroids[j])
+            trucks[i].add_cluster_centroid(tuple(centroids[j]))
             truck_for_cluster[j] = i
             i = (i + 1) % no_trucks
 
@@ -1181,21 +1192,23 @@ class Warehouse:
                 truck.sort_packages("no_packages")
 
 
-def get_euclidean_distance(position1, position2):
+def get_euclidean_distance(position1: Position, position2: Position):
     """
     Return the euclidean distance between two points
     """
     return ((position2.y - position1.y) ** 2 + (position2.x - position1.x) ** 2) ** 0.5
 
 
-def get_manhattan_distance(position1, position2):
+def get_manhattan_distance(position1: Position, position2: Position):
     """
     Return the msanhattan distance between two points
     """
     return abs(position1.x - position2.x) + abs(position1.y - position2.y)
 
 
-def customer_not_already_in_list(customer_package, package_list):
+def customer_not_already_in_list(
+    customer_package: Package, package_list: List[Package]
+):
     """
     Return 0 if the customer for customer_package is already in package_list and return 1 otherwise
     """

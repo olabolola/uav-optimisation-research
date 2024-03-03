@@ -1,5 +1,6 @@
 import timeit
 import random
+from typing import List, Tuple
 
 # TODO convert to gymnasium
 # import gymnasium as gym
@@ -15,7 +16,7 @@ register(
 )
 
 
-def get_no_packages_per_category(filename, keys):
+def get_no_packages_per_category(filename: str, keys: List[int]):
     no_packages_per_category = {no: 0 for no in keys}
     with open(filename) as f:
         lines = f.readlines()
@@ -26,7 +27,7 @@ def get_no_packages_per_category(filename, keys):
     return no_packages_per_category
 
 
-def get_no_customers_per_no_packages(filename, keys):
+def get_no_customers_per_no_packages(filename: str, keys: List[int]):
     no_customers_per_no_packages = {no: 0 for no in keys}
     with open(filename) as f:
         lines = f.readlines()
@@ -37,7 +38,7 @@ def get_no_customers_per_no_packages(filename, keys):
     return no_customers_per_no_packages
 
 
-def get_total_no_packages(filename):
+def get_total_no_packages(filename: str):
     total_no_packages = 0
     with open(filename) as f:
         lines = f.readlines()
@@ -48,7 +49,7 @@ def get_total_no_packages(filename):
 
 
 # The save_result function appends the information from a run to a results csv file
-def save_result(scenario_id, strategy, results, information):
+def save_result(scenario_id: int, strategy: str, results, information: Tuple[int, int]):
 
     with open("results/results.csv", "a") as f:
 
@@ -57,17 +58,17 @@ def save_result(scenario_id, strategy, results, information):
 
 
 def run_env(
-    run_number=0,
-    no_trucks=2,
-    no_clusters=2,
-    no_drones=3,
-    no_customers=60,
-    p=[1],
-    load=False,
-    load_file="saved_states/saved_state_50_5.txt",
-    strategy="farthest_package_first",
-    save_state=False,
-    drone_capacity=2,
+    run_number: int = 0,
+    no_trucks: int = 2,
+    no_clusters: int = 2,
+    no_drones: int = 3,
+    no_customers: int = 60,
+    p: List[int] = [1],
+    load: bool = False,
+    load_file: str = "saved_states/saved_state_50_5.txt",
+    strategy: str = "farthest_package_first",
+    save_state: bool = False,
+    drone_capacity: int = 2,
 ):
 
     env = gym.make(
@@ -279,10 +280,10 @@ for strategy in strategies:
                 no_packages_total = get_total_no_packages(filename)
                 # no_packages_total = 100
                 no_packages_per_category = get_no_packages_per_category(
-                    filename, spans.keys()
+                    filename, list(spans.keys())
                 )
                 no_customers_per_no_packages = get_no_customers_per_no_packages(
-                    filename, spans.keys()
+                    filename, list(spans.keys())
                 )
                 # This is to prevent division by 0 errors
                 if no_packages_per_category[2] == 0:
