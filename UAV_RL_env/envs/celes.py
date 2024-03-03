@@ -46,6 +46,7 @@ class Drone:
 
         # The packages list contains the packages the drone is carrying RIGHT NOW
         self.packages: List[Package] = []
+        # TODO remove this len(packages)
         self.no_packages: int = 0
 
         # This is to check if drone is on its way somewhere
