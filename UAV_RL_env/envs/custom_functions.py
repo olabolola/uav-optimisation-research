@@ -32,47 +32,50 @@ class custom_class(gym.Env):
     ):
 
         # Indicates if we want to save our run or not
-        self.save_state = save_state
+        self.save_state: bool = save_state
 
         # Strategy parameters for all trucks
-        self.strategy = strategy
+        self.strategy: str = strategy
 
         # For loading from a file
         # load is a boolean that indicates whether or not we want to load from a file or not
-        self.load = load
-        self.load_file = load_file
+        self.load: bool = load
+        self.load_file: str = load_file
         # For making the video
-        self.i = 0
+        self.i: int = 0
 
         # For saving to a file
-        self.file_suffix = file_suffix
+        self.file_suffix: str = file_suffix
 
         # Number of clusters
-        self.no_clusters = no_clusters
+        self.no_clusters: int = no_clusters
 
         super().__init__()
 
         # Warehouse initialization
-        self.warehouse_position = celes.Position(width / 2, height / 2)
-        self.warehouse = celes.Warehouse(self.warehouse_position)
+        self.warehouse_position: celes.Position = celes.Position(
+            width // 2, height // 2
+        )
+        self.warehouse: celes.Warehouse = celes.Warehouse(self.warehouse_position)
 
         # Customer initialization
-        self.no_customers = no_customers
-        self.customers = []
-        self.unserviced_customers = []
-        self.customer_positions = []
+        self.no_customers: int = no_customers
+        self.customers: List[celes.Customer] = []
+        self.unserviced_customers: List[celes.Customer] = []
+        self.customer_positions: List[Tuple[int, ...]] = []
 
         # Probability distribution for the packages
-        self.p = p
+        self.p: List[int] = p
 
         # Truck and drone initialization
-        self.no_trucks = no_trucks
-        self.trucks = []
+        self.no_trucks: int = no_trucks
+        self.trucks: List[celes.Truck] = []
 
-        self.no_drones = no_drones
-        self.drones = []
+        self.no_drones: int = no_drones
+        self.drones: List[celes.Drone] = []
+
         # Number of packages our drone can carry
-        self.drone_capacity = drone_capacity
+        self.drone_capacity: int = drone_capacity
 
         # For clustering
         self.centroids = None
@@ -81,7 +84,7 @@ class custom_class(gym.Env):
         # We have two types of done.
         # 1) When the trucks return to the warehouse
         # 2) When all the packages are delivered
-        self.done = [False, False]
+        self.done: List[bool] = [False, False]
 
     def step(self, actions: Tuple[List[str], ...]):
 
@@ -89,19 +92,19 @@ class custom_class(gym.Env):
         # for each truck and drone respectively
 
         # For now trucks either move towards a certain position or just stay still
-        truck_actions = actions[0]
+        truck_actions: List[str] = actions[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
             self._take_truck_action(truck, truck_action)
 
         # Action will be a list of actions for each drone
-        drone_actions = actions[1]
+        drone_actions: List[str] = actions[1]
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
         for customer in self.customers:
-            if customer.quasi_no_packages < 0:
+            if customer.no_packages_still_on_truck < 0:
                 print(customer.position)
-            assert customer.quasi_no_packages >= 0
+            assert customer.no_packages_still_on_truck >= 0
             assert customer.no_of_packages >= 0
         # Now the observations
         # For now just make the observation be the list of trucks, drones and remaining customers
@@ -132,7 +135,7 @@ class custom_class(gym.Env):
     # This function load the customer positions and number of packages for each customer
 
     def load_from_file(self):
-        with open(self.load_file, "a+") as file:
+        with open(self.load_file, "a+", encoding="utf-8") as file:
             lines = file.readlines()
             self.no_customers = len(lines) - 1
 
@@ -229,6 +232,7 @@ class custom_class(gym.Env):
             with open(
                 f"saved_states/saved_state_{self.no_customers}_{self.file_suffix}.txt",
                 "w",
+                encoding="utf-8",
             ) as f:
                 f.write("x_coordinate,y_coordinate,no_packages\n")
                 for customer in self.customers:

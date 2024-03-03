@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Union
 
 from sklearn.cluster import KMeans
 import pandas as pd
@@ -15,69 +15,69 @@ class Drone:
         passive_battery_consume: float = 0.005,
         drone_speed: int = 10,
         battery: float = 100,
-        drone_id=None,
+        drone_id: Optional[int] = None,
         capacity: int = 2,
     ):
 
         # The capacity of the drone is the maximum number of packages it can carry at the same time
-        self.capacity = capacity
+        self.capacity: int = capacity
 
-        self.position = position
+        self.position: Position = position
 
         # Drone active_battery_consume is defined as the amount of battery consumed per unit of distance crossed
-        self.active_battery_consume = active_battery_consume
+        self.active_battery_consume: float = active_battery_consume
 
         # passive_battery_consume is the battery consumed when waiting at a customer to deliver a package
-        self.passive_battery_consume = passive_battery_consume
+        self.passive_battery_consume: float = passive_battery_consume
 
         # Drone speed is given in m/s
-        self.drone_speed = drone_speed
+        self.drone_speed: int = drone_speed
 
         # Battery is just a number representing the percentage of battery remaining
-        self.battery = 100
+        self.battery: float = 100
         # charge_increase is how much charge the battery increases every time step when it is charging
-        self.charge_increase = 0.05
+        self.charge_increase: float = 0.05
 
-        self.drone_id = drone_id
+        self.drone_id: Optional[int] = drone_id
 
         # Home truck is the truck the drone is initially loaded onto (And cannot change)
-        self.home_truck = home_truck
+        self.home_truck: Optional[Truck] = home_truck
 
         # The packages list contains the packages the drone is carrying RIGHT NOW
-        self.packages = []
-        self.no_packages = 0
+        self.packages: List[Package] = []
+        self.no_packages: int = 0
 
         # This is to check if drone is on its way somewhere
-        self.en_route = False
-        self.on_truck = True
+        self.en_route: bool = False
+        self.on_truck: bool = True
 
         # We use this variable to perform a 2 minute delay (120 steps), when unloading the package and giving it to the customer
-        self.delay_variable = 0
+        self.delay_variable: int = 0
 
         # Here we store the total distance travelled by the drone over the course of the run
-        self.total_travel_distance = 0
+        self.total_travel_distance: float = 0
 
         # Here we store the total active time of a drone in clusters
         # Note that we consider the 2 minute dropoff time to be part of the active time
-        self.total_active_time = 0
+        self.total_active_time: int = 0
 
         # Here we store the total delay time the drone spends waiting at the customer.
-        self.total_delay_time = 0
+        self.total_delay_time: int = 0
 
         # This boolean variable tells us when the drone is waiting the 120 seconds at a customer
-        self.waiting = False
+        self.waiting: bool = False
 
         # This variable tells us how many customers the drone will deliver to this trip
-        self.no_customers_in_list = 0
+        self.no_customers_in_list: int = 0
 
         # Number of preventions variables
         # How many times a drone was prevented from leaving the truck due to battery constraints
-        self.no_preventions = 0
+        self.no_preventions: int = 0
         # If this is the first time a drone was prevented on this "stay" on the truck then this variable is true
-        self.first_prevent = True
+        self.first_prevent: bool = True
 
         # This variable stores the total travel distance for the drone on its current or next scheduled flight
-        self.this_delivery_distance = 0
+        self.this_delivery_distance: float = 0
 
     # When a drone returns from a trip delivering packages, we call this function to load additional packages
     def load_package(self):
@@ -214,7 +214,7 @@ class Drone:
 
             # If the drone is on the truck we leave the trucks
             if self.on_truck:
-                self.home_truck.no_drones -= 1
+                self.home_truck.no_drones_currently_on_truck -= 1
 
             # Move towards the customer position
             arrived = self.go_to_position(self.packages[0].customer.position)
@@ -294,21 +294,21 @@ class Package:
     def __init__(
         self, customer: Customer, mass: float = 10, height: float = 5, width: float = 5
     ):
-        self.customer = customer
-        self.mass = mass
-        self.height = height
-        self.width = width
-        self.waiting_time = 0
+        self.customer: Customer = customer
+        self.mass: float = mass
+        self.height: float = height
+        self.width: float = width
+        self.waiting_time: int = 0
 
 
 class Position:
 
     def __init__(self, x: int, y: int):
         # Suppose the location of a truck, drone or house is defined by (x, y)
-        self.x = x
-        self.y = y
+        self.x: int = x
+        self.y: int = y
 
-    def get_position_info(self):
+    def get_position_info(self) -> Dict[str, int]:
         d = {"x": self.x, "y": self.y}
         return d
 
@@ -363,32 +363,32 @@ class Customer:
         self, position: Position, residence_type: str, no_of_packages: int = 0
     ):
         # Location will be a class of type position (defined by x and y)
-        self.position = position
+        self.position: Position = position
         # residence_type will just be a string ("apt" or "house")
-        self.residence_type = residence_type
+        self.residence_type: str = residence_type
         # Here we store the number of packages not yet delivered to the customer
         # If everything has been delivered this variable will be 0
-        self.no_of_packages = no_of_packages
-        self.packages = []
+        self.no_of_packages: int = no_of_packages
+        self.packages: List[Package] = []
         # Here we store the original number of packages
         # After all packages have been delivered this maintains its original value
-        self.original_no_packages = no_of_packages
+        self.original_no_packages: int = no_of_packages
         self.colour = None
 
         # This tells us how many packages are still on the truck
-        self.quasi_no_packages = 0
+        self.no_packages_still_on_truck: int = 0
 
         # Information about delivery span
         # Span is the amount of time between the first and final packages being delivered
         # Time inital and time final are the times the inital and final packages were delivered respectively
-        self.time_initial = -1
-        self.time_final = -1
+        self.time_initial: int = -1
+        self.time_final: int = -1
 
         # This is the number of times are drone arrives at this customer
-        self.no_dropoffs = 0
+        self.no_dropoffs: int = 0
 
-    def get_customer_info(self):
-        d = self.position.get_position_info()
+    def get_customer_info(self) -> Dict[str, Union[int, str]]:
+        d: Dict[str, Union[str, int]] = self.position.get_position_info()
         d["residence_type"] = self.residence_type
         d["no_of_packages"] = self.no_of_packages
         return d
@@ -399,7 +399,7 @@ class Customer:
         """
         self.no_of_packages += 1
         self.original_no_packages += 1
-        self.quasi_no_packages += 1
+        self.no_packages_still_on_truck += 1
         self.packages.append(package)
 
 
@@ -419,45 +419,45 @@ class Truck:
     ):
 
         # Strategy parameters
-        self.strategy = strategy
+        self.strategy: str = strategy
 
-        self.cost = cost
-        self.truck_speed = truck_speed
-        self.position = position
+        self.cost: float = cost
+        self.truck_speed: float = truck_speed
+        self.position: Position = position
 
         # Each truck has a number of drones.
         # These two attributes pertain to the drones CURRENTLY ON THE TRUCK
-        self.drones = []
-        self.no_drones = 0
+        self.current_drones_on_truck: List[Drone] = []
+        self.no_drones_currently_on_truck: int = 0
 
         # This attribute pertains to the drones wherever they may be
-        self.total_no_drones = total_no_drones
+        self.total_no_drones_belonging_to_truck: int = total_no_drones
 
-        self.truck_id = truck_id
+        self.truck_id: Optional[int] = truck_id
 
-        self.packages = {}
-        self.no_packages = 0
+        self.packages: Dict = {}
+        self.no_packages: int = 0
 
         # List of cluster centroids truck must deliver to
-        self.cluster_centroids = []
+        self.cluster_centroids: List[Tuple[int, ...]] = []
 
-        self.is_moving = False
+        self.is_moving: bool = False
 
         # This is the cluster the truck is currently delivering from
-        self.current_cluster = None
+        self.current_cluster: Optional[Tuple[int, ...]] = None
 
-        self.total_package_waiting_time = (
+        self.total_package_waiting_time: int = (
             0  # Here we store the total time for each package to be delivered
         )
-        self.total_customer_waiting_time = (
+        self.total_customer_waiting_time: int = (
             0  # Here we store the total time for each customer to be fully serviced
         )
 
         # Here we store the total distance travelled by the truck throughout the run
-        self.total_travel_distance = 0
+        self.total_travel_distance: float = 0
 
         # Here we store the total time this truck spent in a cluster
-        self.total_time_in_cluster = 0
+        self.total_time_in_cluster: float = 0
 
     def load_package(self, package: Package, cluster: Tuple[int, ...]):
         """
@@ -480,7 +480,7 @@ class Truck:
         ):  # Here we sort the packages according to the distance from the center of the cluster
 
             for cluster, package_list in self.packages.items():
-                cluster_position = Position(cluster[0], cluster[1])
+                cluster_position: Position = Position(cluster[0], cluster[1])
                 self.packages[cluster] = sorted(
                     package_list,
                     key=lambda x: get_euclidean_distance(
@@ -496,7 +496,7 @@ class Truck:
                 self.packages[cluster] = sorted(
                     package_list,
                     key=lambda x: (
-                        x.customer.quasi_no_packages,
+                        x.customer.no_packages_still_on_truck,
                         x.customer.position.x,
                         x.customer.position.y,
                     ),
@@ -509,14 +509,16 @@ class Truck:
         """
 
         # This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
-        total_delivery_distance = 0
+        total_delivery_distance: float = 0
 
         # In this strategy we load the drone farthest away from the truck then next closest to that package and so on.
         if self.strategy == "farthest_package_first":
             while drone.no_packages < drone.capacity:
                 if drone.no_packages == 0:
                     if len(self.packages[self.current_cluster]) > 0:
-                        package_to_deliver = self.packages[self.current_cluster][0]
+                        package_to_deliver: Package = self.packages[
+                            self.current_cluster
+                        ][0]
                         total_delivery_distance += get_euclidean_distance(
                             self.position, package_to_deliver.customer.position
                         )
@@ -536,7 +538,7 @@ class Truck:
                             drone.packages.append(package_to_deliver)
                             drone.no_packages += 1
 
-                            package_to_deliver.customer.quasi_no_packages -= 1
+                            package_to_deliver.customer.no_packages_still_on_truck -= 1
 
                             drone.no_customers_in_list += 1
 
@@ -596,7 +598,7 @@ class Truck:
                         drone.packages.append(package_to_deliver)
                         drone.no_packages += 1
 
-                        package_to_deliver.customer.quasi_no_packages -= 1
+                        package_to_deliver.customer.no_packages_still_on_truck -= 1
 
                         drone.no_customers_in_list += already
 
@@ -644,7 +646,7 @@ class Truck:
                             drone.packages.append(package_to_deliver)
                             drone.no_packages += 1
 
-                            package_to_deliver.customer.quasi_no_packages -= 1
+                            package_to_deliver.customer.no_packages_still_on_truck -= 1
 
                             drone.no_customers_in_list += 1
 
@@ -703,7 +705,7 @@ class Truck:
                         drone.packages.append(package_to_deliver)
                         drone.no_packages += 1
 
-                        package_to_deliver.customer.quasi_no_packages -= 1
+                        package_to_deliver.customer.no_packages_still_on_truck -= 1
 
                         drone.no_customers_in_list += already
 
@@ -758,7 +760,7 @@ class Truck:
                             )
 
                             # Indicate that we have taken the package from the truck but have not delivered it yet
-                            p.customer.quasi_no_packages -= 1
+                            p.customer.no_packages_still_on_truck -= 1
 
                     else:
                         return
@@ -810,7 +812,7 @@ class Truck:
                         drone.no_packages += 1
 
                         # Indicate that we have taken the package from the truck but have not delivered it yet
-                        package_to_deliver.customer.quasi_no_packages -= 1
+                        package_to_deliver.customer.no_packages_still_on_truck -= 1
 
                         drone.no_customers_in_list += already
 
@@ -862,7 +864,7 @@ class Truck:
                             ):
                                 drone.packages.append(package)
                                 drone.no_packages += 1
-                                package.customer.quasi_no_packages -= 1
+                                package.customer.no_packages_still_on_truck -= 1
 
                                 self.packages[self.current_cluster].remove(package)
                                 self.no_packages -= 1
@@ -896,8 +898,9 @@ class Truck:
                         # Here we check if we can load all packages in one go or if we can't do so in the future
                         condition = (
                             drone.capacity - drone.no_packages
-                            >= package.customer.quasi_no_packages
-                            or drone.capacity < package.customer.quasi_no_packages
+                            >= package.customer.no_packages_still_on_truck
+                            or drone.capacity
+                            < package.customer.no_packages_still_on_truck
                         )
 
                         if not condition:
@@ -932,7 +935,7 @@ class Truck:
                             drone.packages.append(package)
                             drone.no_packages += 1
 
-                            package.customer.quasi_no_packages -= 1
+                            package.customer.no_packages_still_on_truck -= 1
 
                             drone.no_customers_in_list += already
 
@@ -949,7 +952,7 @@ class Truck:
                                 )
                             )
 
-                            if package.customer.quasi_no_packages == 0:
+                            if package.customer.no_packages_still_on_truck == 0:
                                 break
                         else:
                             return
@@ -964,7 +967,7 @@ class Truck:
         """
         self.cluster_centroids.append(pos)
 
-    def get_truck_info(self):
+    def get_truck_info(self) -> Dict[str, Union[int, float]]:
         d = self.position.get_position_info()
         d["cost"] = self.cost
         d["speed"] = self.truck_speed
@@ -1011,7 +1014,7 @@ class Truck:
                 else:
                     self.position.y += units_to_move
 
-        for drone in self.drones:
+        for drone in self.current_drones_on_truck:
             if drone.on_truck:
                 drone.position.x = self.position.x
                 drone.position.y = self.position.y
@@ -1039,7 +1042,8 @@ class Truck:
         # AND all drones are on the truck AND we have no packages left
         if (
             len(self.cluster_centroids) == 0
-            and self.no_drones == self.total_no_drones
+            and self.no_drones_currently_on_truck
+            == self.total_no_drones_belonging_to_truck
             and self.no_packages == 0
         ):
             # If we're done move towards the warehouse
@@ -1071,7 +1075,7 @@ class Truck:
         Return True if we have and False otherwise.
         """
         # Return true if we have delivered all packages in cluster
-        if self.total_no_drones != self.no_drones:
+        if self.total_no_drones_belonging_to_truck != self.no_drones_currently_on_truck:
             return False
 
         if (
@@ -1082,7 +1086,7 @@ class Truck:
 
         # Make sure none of the drones are carrying packages
         drones_delivered = True
-        for drone in self.drones:
+        for drone in self.current_drones_on_truck:
             if drone.no_packages != 0:
                 drones_delivered = False
 
@@ -1095,8 +1099,8 @@ class Truck:
         drone.position.x = self.position.x
         drone.position.y = self.position.y
 
-        self.drones.append(drone)
-        self.no_drones += 1
+        self.current_drones_on_truck.append(drone)
+        self.no_drones_currently_on_truck += 1
 
         drone.en_route = False
         drone.on_truck = True
@@ -1104,7 +1108,7 @@ class Truck:
 
 class Warehouse:
     def __init__(self, position: Position):
-        self.position = position
+        self.position: Position = position
 
     def cluster_and_colour(
         self, customers: List[Customer], trucks: List[Truck], no_clusters: int
