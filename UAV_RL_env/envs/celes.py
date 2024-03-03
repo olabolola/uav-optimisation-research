@@ -41,6 +41,7 @@ class Drone:
         self.drone_id: Optional[int] = drone_id
 
         # Home truck is the truck the drone is initially loaded onto (And cannot change)
+        # TODO Optional truck is causing type hint issues.
         self.home_truck: Optional[Truck] = home_truck
 
         # The packages list contains the packages the drone is carrying RIGHT NOW
