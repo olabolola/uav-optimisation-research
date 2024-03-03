@@ -284,6 +284,7 @@ class custom_class(gym.Env):
 
     def _take_drone_action(self, drone: Drone, action: str):
 
+        # TODO are we double counting here?
         # Each step we want to add 1 to the waiting time of the packages
         for package in drone.packages:
             package.waiting_time += 1
@@ -291,6 +292,7 @@ class custom_class(gym.Env):
         # TODO removed steadystate consumption
         if drone.waiting:
             drone.steadystate_consumption()
+
         if action == "nothing":
             pass
         elif action == "go_to_position":
@@ -298,16 +300,19 @@ class custom_class(gym.Env):
         elif action == "return_to_home_truck":
             drone.go_to_home_truck()
         elif action == "deliver_next_package":
+            # For now its just always this action
             if not drone.home_truck.is_moving:
                 drone.deliver_next_package(self.unserviced_customers)
         elif action == "failsafe_mode":
             # TODO Do something???
             pass
 
+        # TODO we check in the function but maybe only call for drones on truck?
         drone.charge()
 
     def _take_truck_action(self, truck: Truck, action: str):
 
+        # TODO are we double counting here?
         # Each step we want to add 1 to the waiting time of the packages
         for cluster_packages in truck.packages.values():
             for package in cluster_packages:

@@ -186,6 +186,7 @@ class Drone:
         # Here we check if the drone is active. If so, we add 1 second to its active time
         # A drone is active if it is moving somewhere OR if it dropping off a package
         # In other words a drone is active when it is NOT on a truck
+        # TODO this logic shouldn't be here
         if self.position != self.home_truck.position:
             self.total_active_time += 1
 
