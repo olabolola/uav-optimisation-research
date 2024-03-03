@@ -4,7 +4,7 @@ import numpy as np
 import gym
 import matplotlib.pyplot as plt
 
-
+from logger_setup import logger
 from . import celes
 from .celes import Drone, Truck
 
@@ -103,7 +103,7 @@ class custom_class(gym.Env):
 
         for customer in self.customers:
             if customer.no_packages_still_on_truck < 0:
-                print(customer.position)
+                logger.debug("Customer position: %s", customer.position)
             assert customer.no_packages_still_on_truck >= 0
             assert customer.no_of_packages >= 0
         # Now the observations
@@ -113,9 +113,6 @@ class custom_class(gym.Env):
         drone_observation = (self.drones,)
 
         observation = (truck_observation, drone_observation, self.customers)
-
-        # Info will be some debugging info
-        info = []
 
         # Check if we are done
         # First we check if there are no more customers to deliver to
@@ -130,7 +127,7 @@ class custom_class(gym.Env):
                     self.done[0] = False
 
         # Return reward, observation, done, info
-        return observation, -1, self.done, info
+        return observation, None, self.done, None
 
     # This function load the customer positions and number of packages for each customer
 

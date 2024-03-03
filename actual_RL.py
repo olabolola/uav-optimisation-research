@@ -1,7 +1,7 @@
 import timeit
 import random
-from typing import List, Tuple
-import logging
+from typing import List, Tuple, Dict
+from logger_setup import logger
 
 
 # TODO convert to gymnasium
@@ -9,16 +9,6 @@ import logging
 import gym
 from gym.envs.registration import register
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-# Define a handler to direct logs to stdout
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-
-# Add the handler to the logger
-logger.addHandler(handler)
 
 random.seed(42)
 
@@ -110,10 +100,10 @@ def run_env(
 
     action = (truck_actions, drone_actions)
 
-    total_time = (
+    total_time: int = (
         0  # Here we store the number of steps for the trucks to return to the warehouse
     )
-    A = 0  # Here we stpre the number of steps until all packages are delivered
+    A: int = 0  # Here we store the number of steps until all packages are delivered
 
     # steps[0] will store the total time, while steps[1] will store the time it takes
     steps = [0, 0]
@@ -121,7 +111,8 @@ def run_env(
     render_cnt = 0
     while True:
 
-        obs, reward, done, info = env.step(action)
+        done: List[bool]
+        obs, _, done, info = env.step(action)
         total_time += 1
 
         # If we haven't delivered all packages then keep on counting A
@@ -155,13 +146,13 @@ def run_env(
             # The span is the time between the inital and final package deliveries for each customer
             # We store seperate values for each original_no_packages
             # Spans will be a dict with original_no_packages as the key and the total span as the value
-            spans = {2: 0, 3: 0, 4: 0}
+            spans: Dict[int, int] = {2: 0, 3: 0, 4: 0}
 
             # Here we store the sum of the number of dropoffs for each customer grouped by original_no_packages
-            no_dropoffs = {2: 0, 3: 0, 4: 0}
+            no_dropoffs: Dict[int, int] = {2: 0, 3: 0, 4: 0}
 
             # How many times drones were prevented from leaving the truck due to battery constraints
-            no_preventions = 0
+            no_preventions: int = 0
 
             drones = obs[1][0]
             trucks = obs[0][0]
@@ -266,20 +257,24 @@ strategies: Tuple[str, ...] = (
     "most_packages_first",
 )
 
+NUMBER_OF_ITERATIONS: int = 10
+
 for strategy in strategies:
-    logger.info(f"Strategy: {strategy}")
+    logger.info("Strategy: %s", strategy)
     for drone_capacity in drone_capacity_values:
 
         for no_customers in no_customers_values:
-            for i in range(10):
+            for i in range(NUMBER_OF_ITERATIONS):
 
                 logger.debug(
-                    f"Drone Capacity: {drone_capacity}, Number of customers: {no_customers}, Iteration: {i}"
+                    "Drone Capacity: %d, Number of customers: %d, Iteration: %d",
+                    drone_capacity,
+                    no_customers,
+                    i,
                 )
 
-                filename = (
-                    path + "saved_state_" + str(no_customers) + "_" + str(i) + ".txt"
-                )
+                filename: str = f"{path}saved_state_{no_customers}_{i}.txt"
+
                 params = {
                     "load_file": filename,
                     "strategy": strategy,
@@ -292,7 +287,7 @@ for strategy in strategies:
                 )
 
                 spans = results["spans"]
-                no_dropoffs = results["no_dropoffs"]
+                no_dropoffs: List[int] = results["no_dropoffs"]
 
                 # Here we store the number of packages for each group of no_packages.
                 # You get the idea :)
@@ -363,4 +358,4 @@ for strategy in strategies:
 
 stop = timeit.default_timer()
 
-print("Time: ", stop - start)
+logger.info("Time to complete simulation: %f", stop - start)
