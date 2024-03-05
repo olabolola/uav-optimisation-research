@@ -1,3 +1,11 @@
-# Testing-UAV-code
+# uav-optimisation-research
 
-This is the code for the research project I am doing in the Computer Engineering department in PSUT.
+We have:
+- Customers who need their packages delivered.
+- Trucks which travel between different customer clusters.
+- Drones which ride on trucks and deliver packages to customers.
+
+## Run steps
+```
+poetry install
+```
