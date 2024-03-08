@@ -292,19 +292,12 @@ class custom_class(gym.Env):
         if drone.waiting:
             drone.steadystate_consumption()
 
-        if action == "nothing":
-            pass
-        elif action == "go_to_position":
-            drone.go_to_position(action[1])
-        elif action == "return_to_home_truck":
-            drone.go_to_home_truck()
-        elif action == "deliver_next_package":
+        if action == "deliver_next_package":
             # For now its just always this action
             if not drone.home_truck.is_moving:
                 drone.deliver_next_package(self.unserviced_customers)
-        elif action == "failsafe_mode":
-            # TODO Do something???
-            pass
+        else:
+            raise NotImplementedError("Unrecognised drone action.")
 
         # TODO we check in the function but maybe only call for drones on truck?
         drone.charge()
@@ -318,8 +311,7 @@ class custom_class(gym.Env):
                 package.waiting_time += 1
 
         # For now action is a 2-tuple that tells the truck where to go to
-        if action == "nothing":
-            pass
-        elif action == "go_to_next_cluster":
-
+        if action == "go_to_next_cluster":
             truck.go_to_next_cluster()
+        else:
+            raise NotImplementedError("Unrecognised truck action.")
