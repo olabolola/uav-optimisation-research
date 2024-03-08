@@ -2,6 +2,11 @@ import logging
 
 
 def setup_logger():
+    """Sets up a Python logger with some sensible defaults and returns it.
+
+    Returns:
+        Logger: A Python logger.
+    """
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
 

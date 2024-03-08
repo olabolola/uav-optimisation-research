@@ -103,7 +103,7 @@ def run_env(
     total_time: int = (
         0  # Here we store the number of steps for the trucks to return to the warehouse
     )
-    A: int = 0  # Here we store the number of steps until all packages are delivered
+    total_number_of_steps_until_finish: int = 0  # Here we store the number of steps until all packages are delivered
 
     # steps[0] will store the total time, while steps[1] will store the time it takes
     steps = [0, 0]
@@ -117,7 +117,7 @@ def run_env(
 
         # If we haven't delivered all packages then keep on counting A
         if not done[1]:
-            A += 1
+            total_number_of_steps_until_finish += 1
 
         # if render_cnt % 17 == 0:
         #     env.render()
@@ -128,7 +128,7 @@ def run_env(
 
             # After the simulation is over store the total number of steps and A
             steps[0] = total_time
-            steps[1] = A
+            steps[1] = total_number_of_steps_until_finish
 
             drone_travel_distance = 0
             truck_travel_distance = 0
@@ -257,7 +257,8 @@ strategies: Tuple[str, ...] = (
     "most_packages_first",
 )
 
-NUMBER_OF_ITERATIONS: int = 10
+
+NUMBER_OF_ITERATIONS: int = 1
 
 for strategy in strategies:
     logger.info("Strategy: %s", strategy)

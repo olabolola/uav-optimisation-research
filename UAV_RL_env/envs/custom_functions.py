@@ -10,8 +10,8 @@ from .celes import Drone, Truck
 
 # Width and height of the grid on witch our customers live
 
-width = 2000
-height = 2000
+GRID_WIDTH = 2000
+GRID_HEIGHT = 2000
 
 
 class custom_class(gym.Env):
@@ -54,7 +54,7 @@ class custom_class(gym.Env):
 
         # Warehouse initialization
         self.warehouse_position: celes.Position = celes.Position(
-            width // 2, height // 2
+            GRID_WIDTH // 2, GRID_HEIGHT // 2
         )
         self.warehouse: celes.Warehouse = celes.Warehouse(self.warehouse_position)
 
@@ -200,12 +200,12 @@ class custom_class(gym.Env):
         # Customer initialization
         for _ in range(self.no_customers):
 
-            x = np.random.randint(1, width)
-            y = np.random.randint(1, height)
+            x = np.random.randint(1, GRID_WIDTH)
+            y = np.random.randint(1, GRID_HEIGHT)
             position = celes.Position(x, y)
             while position in self.customer_positions:
-                x = np.random.randint(1, width)
-                y = np.random.randint(1, height)
+                x = np.random.randint(1, GRID_WIDTH)
+                y = np.random.randint(1, GRID_HEIGHT)
                 position = celes.Position(x, y)
             self.customer_positions.append(position)
             customer = celes.Customer(position, "apt")
@@ -277,8 +277,8 @@ class custom_class(gym.Env):
         truck_plot = ax1.scatter(truck_x, truck_y, c="g", label="truck", marker=",")
 
         # plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
-        plt.xlim(-10, width)
-        plt.ylim(-10, height)
+        plt.xlim(-10, GRID_WIDTH)
+        plt.ylim(-10, GRID_HEIGHT)
 
         plt.show()
 
