@@ -1,7 +1,6 @@
 import timeit
 import random
 from typing import List, Tuple, Dict
-from logger_setup import logger
 
 
 # TODO convert to gymnasium
@@ -9,6 +8,7 @@ from logger_setup import logger
 import gym
 from gym.envs.registration import register
 
+from logger_setup import logger
 
 random.seed(42)
 

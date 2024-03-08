@@ -312,6 +312,12 @@ class Position:
         self.y: int = y
 
     def get_position_info(self) -> Dict[str, int]:
+        """Return a dictionary with position coordinates.
+
+        Returns:
+            Dict[str, int]: Return a dictionary where the key is the coordinate name,
+            and the value is the coordinate value.
+        """
         d = {"x": self.x, "y": self.y}
         return d
 
