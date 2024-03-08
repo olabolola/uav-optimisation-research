@@ -180,8 +180,7 @@ class custom_class(gym.Env):
             )
 
             for _ in range(self.no_drones):
-                drone = celes.Drone(celes.Position(x, y), capacity=self.drone_capacity)
-                drone.home_truck = truck
+                drone = celes.Drone(celes.Position(x, y), capacity=self.drone_capacity, home_truck=truck)
 
                 truck.load_drone(drone)
                 self.drones.append(drone)

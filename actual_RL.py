@@ -292,9 +292,7 @@ for strategy in strategies:
 
                 # Here we store the number of packages for each group of no_packages.
                 # You get the idea :)
-                # TODO change back
                 no_packages_total = get_total_no_packages(filename)
-                # no_packages_total = 100
                 no_packages_per_category = get_no_packages_per_category(
                     filename, list(spans.keys())
                 )
