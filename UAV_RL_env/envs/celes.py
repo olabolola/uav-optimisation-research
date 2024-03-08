@@ -878,6 +878,7 @@ class Truck:
                 else:
                     return
 
+            # TODO shouldnt have to check if drone has packages
             if len(self.packages[self.current_cluster]) > 0 and drone.no_packages != 0:
 
                 # We enter here if the drone already has packages on it
@@ -891,6 +892,7 @@ class Truck:
                         reverse=True,
                     )
                     # Make sure we have packages in our list
+                    # TODO this should never occur raise error
                     if len(packages_new) == 0:
                         return
 

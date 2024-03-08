@@ -1,0 +1,29 @@
+while there are packages left to deliver:
+    for drone in drones:
+        farthest_package, farthest_customer = find_farthest_package_and_customer(truck_location, packages)
+        drone.assign(farthest_package)
+        packages_to_deliver.remove(farthest_package)
+        last_assigned_package = farthest_package
+        
+        # Load all packages from the farthest customer if they fit in the drone's capacity
+        while there are packages left to deliver and drone.no_packages < drone.capacity and farthest_customer.has_packages_left():
+            next_package = farthest_customer.get_next_package_to_deliver()
+            if drone.can_load(next_package):
+                drone.load(next_package)
+                packages_to_deliver.remove(next_package)
+        
+        # Continue delivering if there's still capacity and packages left to deliver
+        while there are packages left to deliver and drone.no_packages < drone.capacity:
+            next_closest_package, next_closest_customer = get_next_closest_package_and_customer(last_assigned_package, packages_to_deliver)
+            
+            # Check if the drone can deliver all packages from the next closest customer in one shot
+            if drone.can_deliver_all_packages(next_closest_customer):
+                drone.load_all_packages(next_closest_customer)
+                packages_to_deliver.remove_all(next_closest_customer.packages)
+            else:
+                # If not, move to the next closest customer
+                continue
+            
+            last_assigned_package = next_closest_package
+    
+end while

@@ -1,0 +1,25 @@
+while there are packages left to deliver:
+    for drone in drones:
+        farthest_package = find_farthest_package(truck_location, packages)
+        drone.assign(farthest_package)
+        packages_to_deliver.remove(farthest_package)
+        last_assigned_package = farthest_package
+        
+        while there are packages left to deliver and drone.no_packages < drone.capacity:
+            next_closest_package = get_next_closest_package(last_assigned_package, packages_to_deliver)
+            
+            if drone can deliver next closest package with its max charge:
+                drone.assign(next_closest_package)
+                packages_to_deliver.remove(next_closest_package)
+                last_assigned_package = next_closest_package
+            else if drone can deliver with current charge:
+                drone.leave_truck_to_deliver_packages()
+            else:
+                drone.charge_until_deliver()
+                
+                if drone can deliver with current charge:
+                    drone.leave_truck_to_deliver_packages()
+                else:
+                    drone.charge_until_deliver()
+    end for
+end while
