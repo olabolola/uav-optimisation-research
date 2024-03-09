@@ -63,7 +63,7 @@ class custom_class(gym.Env):
         self.no_customers: int = no_customers
         self.customers: List[celes.Customer] = []
         self.unserviced_customers: List[celes.Customer] = []
-        self.customer_positions: List[Tuple[int, ...]] = []
+        self.customer_positions: List[celes.Position] = []
 
         # Probability distribution for the packages
         self.p: List[int] = p
@@ -81,6 +81,7 @@ class custom_class(gym.Env):
         # For clustering
         self.centroids = None
 
+        # TODO add sensible bounds for these observations
         # Assuming no_trucks, no_drones, and no_customers are defined elsewhere in your code
         # Define observation space for truck observations
         truck_observation_space = spaces.Dict(
@@ -102,16 +103,17 @@ class custom_class(gym.Env):
                 "total_travel_distance": spaces.Box(low=0, high=float("inf"), shape=()),
                 "total_active_time": spaces.Box(low=0, high=float("inf"), shape=()),
                 "total_delay_time": spaces.Box(low=0, high=float("inf"), shape=()),
-                "no_preventions": spaces.Discrete(2),  # Assuming binary (0 or 1)
+                "no_preventions": spaces.Box(low=0, high=float("inf"), shape=()),
             }
         )
 
         # Define observation space for customer observations
         customer_observation_space = spaces.Dict(
             {
-                "original_no_packages": spaces.Discrete(
-                    100
-                )  # Adjust the upper bound as per your needs
+                "original_no_packages": spaces.Box(low=0, high=float("inf"), shape=()),
+                "customer_time_initial": spaces.Box(low=0, high=float("inf"), shape=()),
+                "customer_time_final": spaces.Box(low=0, high=float("inf"), shape=()),
+                "customer_no_dropoffs": spaces.Box(low=0, high=float("inf"), shape=()),
             }
         )
 
@@ -138,18 +140,18 @@ class custom_class(gym.Env):
         # 2) When all the packages are delivered
         self.done: bool = False
 
-    def step(self, actions: Tuple[List[str], ...]):
+    def step(self, action: Tuple[List[str], ...]):
 
         # actions is a list containing two elements; a list of truck actions and a list of drone actions
         # for each truck and drone respectively
 
         # For now trucks either move towards a certain position or just stay still
-        truck_actions: List[str] = actions[0]
+        truck_actions: List[str] = action[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
             self._take_truck_action(truck, truck_action)
 
         # Action will be a list of actions for each drone
-        drone_actions: List[str] = actions[1]
+        drone_actions: List[str] = action[1]
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
@@ -375,7 +377,11 @@ class custom_class(gym.Env):
             raise NotImplementedError("Unrecognised truck action.")
 
 
-def generate_observations(trucks, drones, customers):
+def generate_observations(
+    trucks: List[celes.Truck],
+    drones: List[celes.Drone],
+    customers: List[celes.Customer],
+):
     # Collect truck observations
     truck_observations = []
     for truck in trucks:
@@ -404,7 +410,12 @@ def generate_observations(trucks, drones, customers):
     customer_observations = []
     for customer in customers:
         customer_observations.append(
-            {"original_no_packages": customer.original_no_packages}
+            {
+                "original_no_packages": customer.original_no_packages,
+                "customer_time_final": customer.time_final,
+                "customer_time_initial": customer.time_initial,
+                "customer_no_dropoffs": customer.no_dropoffs,
+            }
         )
 
     return {

@@ -34,7 +34,7 @@ class Drone:
         self.drone_speed: int = drone_speed
 
         # Battery is just a number representing the percentage of battery remaining
-        self.battery: float = 100
+        self.battery: float = battery
         # charge_increase is how much charge the battery increases every time step when it is charging
         self.charge_increase: float = 0.05
 
@@ -356,8 +356,8 @@ class Position:
         previous_position = Position(self.x, self.y)
 
         v._normalize_position()
-        self.x = self.x + distance * v.x
-        self.y = self.y + distance * v.y
+        self.x = int(self.x + distance * v.x)
+        self.y = int(self.y + distance * v.y)
 
         return get_euclidean_distance(previous_position, self)
 
@@ -378,7 +378,7 @@ class Customer:
         # Here we store the original number of packages
         # After all packages have been delivered this maintains its original value
         self.original_no_packages: int = no_of_packages
-        self.colour = None
+        self.colour: str
 
         # This tells us how many packages are still on the truck
         self.no_packages_still_on_truck: int = 0
@@ -393,10 +393,17 @@ class Customer:
         self.no_dropoffs: int = 0
 
     def get_customer_info(self) -> Dict[str, Union[int, str]]:
-        d: Dict[str, Union[str, int]] = self.position.get_position_info()
-        d["residence_type"] = self.residence_type
-        d["no_of_packages"] = self.no_of_packages
-        return d
+        # TODO convert this to a json method
+        d: Dict[str, int] = self.position.get_position_info()
+
+        customer_info: Dict[str, Union[int, str]] = {
+            "x": d["x"],
+            "y": d["y"],
+            "residence_type": self.residence_type,
+            "no_of_packages": self.no_of_packages,
+        }
+
+        return customer_info
 
     def add_package(self, package: Package):
         """
@@ -417,7 +424,7 @@ class Truck:
         self,
         position: Position,
         cost: float = 0.0006,
-        truck_speed: float = 8,
+        truck_speed: int = 8,
         truck_id: Optional[int] = None,
         total_no_drones: int = 0,
         strategy: str = "next_closest",
@@ -427,7 +434,7 @@ class Truck:
         self.strategy: str = strategy
 
         self.cost: float = cost
-        self.truck_speed: float = truck_speed
+        self.truck_speed: int = truck_speed
         self.position: Position = position
 
         # Each truck has a number of drones.
@@ -449,7 +456,7 @@ class Truck:
         self.is_moving: bool = False
 
         # This is the cluster the truck is currently delivering from
-        self.current_cluster: Optional[Tuple[int, ...]] = None
+        self.current_cluster: Tuple[int, ...]
 
         self.total_package_waiting_time: int = (
             0  # Here we store the total time for each package to be delivered
@@ -963,11 +970,16 @@ class Truck:
         self.cluster_centroids.append(pos)
 
     def get_truck_info(self) -> Dict[str, Union[int, float]]:
+        # TODO convert this to a json method
         d = self.position.get_position_info()
-        d["cost"] = self.cost
-        d["speed"] = self.truck_speed
-        d["no_of_drones"] = self.no_of_drones
-        return d
+        truck_info: Dict[str, Union[int, float]] = {
+            "x": d["x"],
+            "y": d["y"],
+            "cost": self.cost,
+            "no_of_drones": self.no_of_drones,
+        }
+
+        return truck_info
 
     def move_towards_position(self, position: Position):
         """
@@ -1191,14 +1203,14 @@ class Warehouse:
                 truck.sort_packages("no_packages")
 
 
-def get_euclidean_distance(position1: Position, position2: Position):
+def get_euclidean_distance(position1: Position, position2: Position) -> float:
     """
     Return the euclidean distance between two points
     """
     return ((position2.y - position1.y) ** 2 + (position2.x - position1.x) ** 2) ** 0.5
 
 
-def get_manhattan_distance(position1: Position, position2: Position):
+def get_manhattan_distance(position1: Position, position2: Position) -> float:
     """
     Return the msanhattan distance between two points
     """
@@ -1207,7 +1219,7 @@ def get_manhattan_distance(position1: Position, position2: Position):
 
 def customer_not_already_in_list(
     customer_package: Package, package_list: List[Package]
-):
+) -> int:
     """
     Return 0 if the customer for customer_package is already in package_list and return 1 otherwise
     """
