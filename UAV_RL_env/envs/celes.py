@@ -884,7 +884,6 @@ class Truck:
                         reverse=True,
                     )
                     # Make sure we have packages in our list
-                    # TODO this should never occur raise error
                     if len(packages_new) == 0:
                         return
 

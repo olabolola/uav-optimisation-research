@@ -1,12 +1,11 @@
 import timeit
 import random
 from typing import List, Tuple, Dict
+import warnings
 
+import gymnasium as gym
 
-# TODO convert to gymnasium
-# import gymnasium as gym
-import gym
-from gym.envs.registration import register
+from gymnasium.envs.registration import register
 
 from logger_setup import logger
 
@@ -16,6 +15,8 @@ register(
     id="HDS-v1",
     entry_point="UAV_RL_env.envs:custom_class",
 )
+
+warnings.filterwarnings("ignore", category=UserWarning)
 
 
 def get_no_packages_per_category(filename: str, keys: List[int]):
@@ -88,22 +89,21 @@ def run_env(
         drone_capacity=drone_capacity,
     )
 
-    env.reset()
+    env.reset(seed=42)
 
     truck_actions = []
     drone_actions = []
 
-    for _ in range(no_trucks):
-        truck_actions.append("go_to_next_cluster")
-        for _ in range(no_drones):
-            drone_actions.append("deliver_next_package")
+    truck_actions = ["go_to_next_cluster"] * no_trucks
+    drone_actions = ["deliver_next_package"] * (no_trucks * no_drones)
 
+    # Convert actions to tuple
     action = (truck_actions, drone_actions)
 
     total_time: int = (
         0  # Here we store the number of steps for the trucks to return to the warehouse
     )
-    total_number_of_steps_until_finish: int = 0  # Here we store the number of steps until all packages are delivered
+    A: int = 0  # Here we store the number of steps until all packages are delivered
 
     # steps[0] will store the total time, while steps[1] will store the time it takes
     steps = [0, 0]
@@ -111,24 +111,24 @@ def run_env(
     render_cnt = 0
     while True:
 
-        done: List[bool]
-        obs, _, done, info = env.step(action)
+        done: bool
+        obs, _, done, _, info = env.step(action)
         total_time += 1
 
-        # If we haven't delivered all packages then keep on counting A
-        if not done[1]:
-            total_number_of_steps_until_finish += 1
+        # if there are still unservices customers then A++
+        if info["no_unserviced_customers"] != 0:
+            A += 1
 
         # if render_cnt % 17 == 0:
         #     env.render()
         # render_cnt += 1
 
         # When we are finished (trucks return to warehouse) we will return the results of the run
-        if done[0]:
+        if done:
 
             # After the simulation is over store the total number of steps and A
             steps[0] = total_time
-            steps[1] = total_number_of_steps_until_finish
+            steps[1] = A
 
             drone_travel_distance = 0
             truck_travel_distance = 0
@@ -154,28 +154,28 @@ def run_env(
             # How many times drones were prevented from leaving the truck due to battery constraints
             no_preventions: int = 0
 
-            drones = obs[1][0]
-            trucks = obs[0][0]
-            customers = obs[2]
+            drones = obs["drone_observations"]
+            trucks = obs["truck_observations"]
+            customers = obs["customer_observations"]
 
             for customer in customers:
-                if customer.original_no_packages in spans.keys():
-                    spans[customer.original_no_packages] += (
+                if customer["original_no_packages"] in spans.keys():
+                    spans[customer["original_no_packages"]] += (
                         customer.time_final - customer.time_initial
                     )
                     no_dropoffs[customer.original_no_packages] += customer.no_dropoffs
 
             for drone in drones:
-                drone_travel_distance += drone.total_travel_distance
-                X2 += drone.total_active_time
-                total_delay_time += drone.total_delay_time
-                no_preventions += drone.no_preventions
+                drone_travel_distance += drone["total_travel_distance"]
+                X2 += drone["total_active_time"]
+                total_delay_time += drone["total_delay_time"]
+                no_preventions += drone["no_preventions"]
 
             for truck in trucks:
-                total_package_waiting_time += truck.total_package_waiting_time
-                total_customer_waiting_time += truck.total_customer_waiting_time
-                truck_travel_distance += truck.total_travel_distance
-                X1 += truck.total_time_in_cluster
+                total_package_waiting_time += truck["total_package_waiting_time"]
+                total_customer_waiting_time += truck["total_customer_waiting_time"]
+                truck_travel_distance += truck["total_travel_distance"]
+                X1 += truck["total_time_in_cluster"]
 
             utilization = X2 / (X1 * no_drones)
             results = {

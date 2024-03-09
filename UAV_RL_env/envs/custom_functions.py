@@ -1,8 +1,9 @@
 from typing import List, Tuple
 
 import numpy as np
-import gym
+import gymnasium as gym
 import matplotlib.pyplot as plt
+from gymnasium import spaces
 
 from logger_setup import logger
 from . import celes
@@ -80,11 +81,62 @@ class custom_class(gym.Env):
         # For clustering
         self.centroids = None
 
+        # Assuming no_trucks, no_drones, and no_customers are defined elsewhere in your code
+        # Define observation space for truck observations
+        truck_observation_space = spaces.Dict(
+            {
+                "total_package_waiting_time": spaces.Box(
+                    low=0, high=float("inf"), shape=()
+                ),
+                "total_customer_waiting_time": spaces.Box(
+                    low=0, high=float("inf"), shape=()
+                ),
+                "total_travel_distance": spaces.Box(low=0, high=float("inf"), shape=()),
+                "total_time_in_cluster": spaces.Box(low=0, high=float("inf"), shape=()),
+            }
+        )
+
+        # Define observation space for drone observations
+        drone_observation_space = spaces.Dict(
+            {
+                "total_travel_distance": spaces.Box(low=0, high=float("inf"), shape=()),
+                "total_active_time": spaces.Box(low=0, high=float("inf"), shape=()),
+                "total_delay_time": spaces.Box(low=0, high=float("inf"), shape=()),
+                "no_preventions": spaces.Discrete(2),  # Assuming binary (0 or 1)
+            }
+        )
+
+        # Define observation space for customer observations
+        customer_observation_space = spaces.Dict(
+            {
+                "original_no_packages": spaces.Discrete(
+                    100
+                )  # Adjust the upper bound as per your needs
+            }
+        )
+
+        # Create observation space for variable number of entities
+        self.observation_space = spaces.Dict(
+            {
+                "truck_observations": spaces.Tuple(
+                    [truck_observation_space] * self.no_trucks
+                ),
+                "drone_observations": spaces.Tuple(
+                    [drone_observation_space] * self.no_drones * self.no_trucks
+                ),
+                "customer_observations": spaces.Tuple(
+                    [customer_observation_space] * self.no_customers
+                ),
+            }
+        )
+
+        self.action_space = spaces.Discrete(2)
+
         # Check if we have finished delivering all the packages
         # We have two types of done.
         # 1) When the trucks return to the warehouse
         # 2) When all the packages are delivered
-        self.done: List[bool] = [False, False]
+        self.done: bool = False
 
     def step(self, actions: Tuple[List[str], ...]):
 
@@ -109,25 +161,26 @@ class custom_class(gym.Env):
         # Now the observations
         # For now just make the observation be the list of trucks, drones and remaining customers
 
-        truck_observation = (self.trucks,)
-        drone_observation = (self.drones,)
-
-        observation = (truck_observation, drone_observation, self.customers)
-
+        observations = generate_observations(self.trucks, self.drones, self.customers)
         # Check if we are done
         # First we check if there are no more customers to deliver to
         if len(self.unserviced_customers) == 0:
 
-            self.done[1] = True
+            self.done = True
 
-            self.done[0] = True
             # Here we make sure the truck has returned to the warehouse
             for truck in self.trucks:
                 if truck.position != self.warehouse_position:
-                    self.done[0] = False
+                    self.done = False
 
         # Return reward, observation, done, info
-        return observation, None, self.done, None
+        return (
+            observations,
+            0,
+            self.done,
+            False,
+            {"no_unserviced_customers": len(self.unserviced_customers)},
+        )
 
     # This function load the customer positions and number of packages for each customer
 
@@ -155,7 +208,7 @@ class custom_class(gym.Env):
 
                 self.customers.append(customer)
 
-    def reset(self):
+    def reset(self, options={}, seed=None):
 
         # Initialization
         self.customers = []
@@ -180,7 +233,9 @@ class custom_class(gym.Env):
             )
 
             for _ in range(self.no_drones):
-                drone = celes.Drone(celes.Position(x, y), capacity=self.drone_capacity, home_truck=truck)
+                drone = celes.Drone(
+                    celes.Position(x, y), capacity=self.drone_capacity, home_truck=truck
+                )
 
                 truck.load_drone(drone)
                 self.drones.append(drone)
@@ -238,6 +293,9 @@ class custom_class(gym.Env):
                         + str(customer.no_of_packages)
                         + "\n"
                     )
+
+        observations = generate_observations(self.trucks, self.drones, self.customers)
+        return tuple([observations, {}])
 
     def render(self, mode: str = "human", close: bool = False):
 
@@ -315,3 +373,42 @@ class custom_class(gym.Env):
             truck.go_to_next_cluster()
         else:
             raise NotImplementedError("Unrecognised truck action.")
+
+
+def generate_observations(trucks, drones, customers):
+    # Collect truck observations
+    truck_observations = []
+    for truck in trucks:
+        truck_observations.append(
+            {
+                "total_package_waiting_time": truck.total_package_waiting_time,
+                "total_customer_waiting_time": truck.total_customer_waiting_time,
+                "total_travel_distance": truck.total_travel_distance,
+                "total_time_in_cluster": truck.total_time_in_cluster,
+            }
+        )
+
+    # Collect drone observations
+    drone_observations = []
+    for drone in drones:
+        drone_observations.append(
+            {
+                "total_travel_distance": drone.total_travel_distance,
+                "total_active_time": drone.total_active_time,
+                "total_delay_time": drone.total_delay_time,
+                "no_preventions": drone.no_preventions,
+            }
+        )
+
+    # Collect customer observations
+    customer_observations = []
+    for customer in customers:
+        customer_observations.append(
+            {"original_no_packages": customer.original_no_packages}
+        )
+
+    return {
+        "truck_observations": truck_observations,
+        "drone_observations": drone_observations,
+        "customer_observations": customer_observations,
+    }
