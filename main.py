@@ -23,7 +23,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 p = [0.85, 0.09, 0.04, 0.02]
 
 # This is the directory where our saved states are saved
-saved_states_path: str = "../saved_states/"
+# TODO make this relative
+saved_states_path: str = (
+    "/Users/olabola/UAV_project/uav-optimisation-research/saved_states/"
+)
 
 # This is just for testing
 # drone_capacity = 1
