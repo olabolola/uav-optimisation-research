@@ -50,7 +50,6 @@ drone_capacity_values: Tuple[int, ...] = (
     1,
     2,
     3,
-    4,
 )  # We will be testing these values of drone_capacity in our simulation
 
 strategies: Tuple[str, str, str, str] = (
@@ -85,9 +84,10 @@ for strategy in strategies:
                 }
                 results = EnvRunner.run_env(
                     load_file=params["load_file"],
+                    load=True,
                     strategy=params["strategy"],
                     drone_capacity=params["drone_capacity"],
-                    p=p,
+                    # p=p,
                 )
 
                 spans: Dict[int, int] = results["spans"]

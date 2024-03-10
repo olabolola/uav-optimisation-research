@@ -42,6 +42,7 @@ class custom_class(gym.Env):
         # load is a boolean that indicates whether or not we want to load from a file or not
         self.load: bool = load
         self.load_file: str = load_file
+
         # For making the video
         self.i: int = 0
 
@@ -64,6 +65,12 @@ class custom_class(gym.Env):
         self.customers: List[celes.Customer] = []
         self.unserviced_customers: List[celes.Customer] = []
         self.customer_positions: List[celes.Position] = []
+
+        # TODO dont duplicate between reset and here
+        if self.load:
+            self.no_customers = (
+                len(open(self.load_file, encoding="utf-8").readlines()) - 1
+            )
 
         # Probability distribution for the packages
         self.p: List[int] = p
@@ -187,7 +194,7 @@ class custom_class(gym.Env):
     # This function load the customer positions and number of packages for each customer
 
     def load_from_file(self):
-        with open(self.load_file, "a+", encoding="utf-8") as file:
+        with open(self.load_file, "r", encoding="utf-8") as file:
             lines = file.readlines()
             self.no_customers = len(lines) - 1
 
