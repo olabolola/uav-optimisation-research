@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+plt.figure(figsize=(9, 9))
 # Setting font parameters
 # font = {'family' : 'normal',
 #         'size'   : 9}

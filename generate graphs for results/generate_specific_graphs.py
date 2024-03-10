@@ -112,8 +112,8 @@ strategies = ["FPF", "FPF_MPA", "CPF", "MPF"]
 # for col in cols:
 #     plot_by_X(df, col, save=True)
 
-# for col in cols:
-#     for by in ('no_customers', 'drone_capacity'):
-#         plot_by_X2(df, col, by = by, save=True)
+for col in cols:
+    for by in ("no_customers", "drone_capacity"):
+        plot_by_X2(df, col, by=by, save=False)
 
-plot_by_X2(df, "total_time", by="no_customers", save=False)
+# plot_by_X2(df, "avg_nodropoffs_2", by="drone_capacity", save=False)
