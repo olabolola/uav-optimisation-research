@@ -6,7 +6,7 @@ import seaborn as sns
 
 colors = ["#727272", "#599ad3"]
 no_customer_values = (50, 100, 200, 500)
-drone_capacity_values = (1, 2, 3, 4)
+drone_capacity_values = (1, 2, 3)
 
 
 def get_battery_strategy_vs_noc_and_dc(mean_value_col, by: str, save=False):
@@ -47,7 +47,7 @@ def get_battery_strategy_vs_noc_and_dc(mean_value_col, by: str, save=False):
         plt.show()
 
 
-df = pd.read_csv("results/results - launch immediately.csv")
+df = pd.read_csv("../results/results.csv")
 
 df.strategy = df.strategy.replace("farthest_package_first", "FPF")
 df.strategy = df.strategy.replace("closest_package_first", "CPF")
@@ -84,9 +84,4 @@ for col in cols:
     for by in ("no_customers", "drone_capacity"):
         get_battery_strategy_vs_noc_and_dc(col, by=by, save=False)
 
-
-# for col in cols:
-#     print(df_bad.total_time.mean())
-#     print(df_good.total_time.mean())
-
-# get_battery_strategy_vs_noc_and_dc('total_time', 'drone_capacity', save=False)
+get_battery_strategy_vs_noc_and_dc("total_time", "drone_capacity", save=False)
