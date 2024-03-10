@@ -166,7 +166,7 @@ class custom_class(gym.Env):
             if customer.no_packages_still_on_truck < 0:
                 logger.debug("Customer position: %s", customer.position)
             assert customer.no_packages_still_on_truck >= 0
-            assert customer.no_of_packages >= 0
+            assert customer.no_packages_still_on_truck >= 0
         # Now the observations
         # For now just make the observation be the list of trucks, drones and remaining customers
 
@@ -299,7 +299,7 @@ class custom_class(gym.Env):
                     f.write(
                         str(customer.position)
                         + ", "
-                        + str(customer.no_of_packages)
+                        + str(customer.no_packages_still_on_truck)
                         + "\n"
                     )
 
