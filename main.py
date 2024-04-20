@@ -1,8 +1,9 @@
 import timeit
 import random
-from typing import Tuple, Dict
+import os
+from typing import Tuple, Dict, List
 import warnings
-
+import tqdm
 from gymnasium.envs.registration import register
 
 from logger_setup import logger
@@ -18,32 +19,12 @@ register(
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# I want to try running no_runs scenarios with the 'next_closest' strategy, then trying the same no_runs
-# scenarios with the 'random' strategy and compare the number of steps
-p = [0.85, 0.09, 0.04, 0.02]
 
 # This is the directory where our saved states are saved
-# TODO make this relative
-saved_states_path: str = (
-    "/Users/olabola/UAV_project/uav-optimisation-research/saved_states/"
-)
+saved_states_dir: str = "saved_states"
 
-# This is just for testing
-# drone_capacity = 1
-# filename = path + 'saved_state_200_0.txt'
-# strategy = 'farthest_package_first_MPA'
-# EnvRunner.run_env(6, no_trucks, None, no_drones, None, p, load=True, load_file = filename, strategy=strategy, save_state=False, drone_capacity = drone_capacity)
 
-# Generate the 40 test files
-
-no_customers_values = (50, 100, 200, 500)
-# strategy = 'farthest_package_first'
-
-# for no_customers in no_customers_values:
-
-#     for i in range(10):
-#         EnvRunner.run_env(i, no_trucks, 2, no_drones, no_customers, p, load=False, load_file=None, strategy=strategy, save_state=True, drone_capacity = 10)
-
+no_customers_values = (50, 100, 200, 400)
 
 file_utils.initialise_results_file_with_columns(results_file_path="results/results.csv")
 
@@ -53,7 +34,9 @@ drone_capacity_values: Tuple[int, ...] = (
     1,
     2,
     3,
-)  # We will be testing these values of drone_capacity in our simulation
+)
+
+no_drones_values: Tuple[int, ...] = (1, 2, 3, 4)
 
 strategies: Tuple[str, str, str, str] = (
     "farthest_package_first_MPA",
@@ -62,105 +45,156 @@ strategies: Tuple[str, str, str, str] = (
     "most_packages_first",
 )
 
-NUMBER_OF_ITERATIONS: int = 1
+NUMBER_OF_ITERATIONS: int = 10
+
+no_clusters_per_no_customers: Dict[int, List[int]] = {
+    50: [2],
+    100: [2, 4],
+    200: [2, 4, 8],
+    400: [2, 4, 8, 16],
+}
+
+# no_clusters_per_no_customers: Dict[int, List[int]] = {
+#     50: [2],
+#     100: [2, 4],
+#     200: [2, 4],
+#     400: [2, 4],
+# }
+
+TOTAL_NO_ITERATIONS: int = (
+    sum(
+        len(no_clusters_per_no_customers[no_customers])
+        for no_customers in no_customers_values
+    )
+    * NUMBER_OF_ITERATIONS
+    * len(no_drones_values)
+    * len(strategies)
+    * len(drone_capacity_values)
+)
+
+
+progress_bar = tqdm.tqdm(total=TOTAL_NO_ITERATIONS, desc="Progress", unit="iteration")
 
 
 for strategy in strategies:
     logger.info("Strategy: %s", strategy)
     for drone_capacity in drone_capacity_values:
         for no_customers in no_customers_values:
-            for i in range(NUMBER_OF_ITERATIONS):
+            for no_clusters in no_clusters_per_no_customers[no_customers]:
+                for no_drones in no_drones_values:
+                    for i in range(NUMBER_OF_ITERATIONS):
 
-                logger.debug(
-                    "Drone Capacity: %d, Number of customers: %d, Iteration: %d",
-                    drone_capacity,
-                    no_customers,
-                    i,
-                )
+                        debug_string: str = (
+                            f"No Drones: {no_drones}, drone cap: {drone_capacity}, no cust: {no_customers}, no_clusters: {no_clusters}, Iteration: {i}"
+                        )
+                        # logger.debug(debug_string)
+                        progress_bar.update(1)
+                        progress_bar.set_description(f"Progress - {debug_string}")
 
-                filename: str = f"{saved_states_path}saved_state_{no_customers}_{i}.txt"
+                        filename = os.path.join(
+                            saved_states_dir, f"saved_state_{no_customers}_{i}.csv"
+                        )
 
-                params = {
-                    "load_file": filename,
-                    "strategy": strategy,
-                    "drone_capacity": drone_capacity,
-                }
-                results = EnvRunner.run_env(
-                    load_file=params["load_file"],
-                    load=True,
-                    strategy=params["strategy"],
-                    drone_capacity=params["drone_capacity"],
-                    # p=p,
-                )
+                        params = {
+                            "load_file": filename,
+                            "strategy": strategy,
+                            "drone_capacity": drone_capacity,
+                        }
 
-                spans: Dict[int, int] = results["spans"]
-                no_dropoffs: Dict[int, int] = results["no_dropoffs"]
+                        results = EnvRunner.run_env(
+                            load_file=params["load_file"],
+                            no_drones=no_drones,
+                            load=True,
+                            no_clusters=no_clusters,
+                            strategy=params["strategy"],
+                            drone_capacity=params["drone_capacity"],
+                        )
 
-                # Here we store the number of packages for each group of no_packages.
-                no_packages_total = file_utils.get_total_no_packages(filename)
-                no_packages_per_category = file_utils.get_no_packages_per_category(
-                    filename, list(spans.keys())
-                )
-                no_customers_per_no_packages = (
-                    file_utils.get_no_customers_per_no_packages(
-                        filename, list(spans.keys())
-                    )
-                )
-                # This is to prevent division by 0 errors
-                if no_packages_per_category[2] == 0:
-                    avg_span_2 = -10
-                    avg_nodropoofs_2 = -10
-                else:
-                    avg_span_2 = round(spans[2] / no_customers_per_no_packages[2], 2)
-                    avg_nodropoofs_2 = round(
-                        no_dropoffs[2] / no_packages_per_category[2], 2
-                    )
-                    # avg_nodropoofs_2 = round(no_dropoffs[2] / no_customers_per_no_packages[2], 2)
-                if no_packages_per_category[3] == 0:
-                    avg_span_3 = -10
-                    avg_nodropoofs_3 = -10
-                else:
-                    avg_span_3 = round(spans[3] / no_customers_per_no_packages[3], 2)
-                    avg_nodropoofs_3 = round(
-                        no_dropoffs[3] / no_packages_per_category[3], 2
-                    )
-                    # avg_nodropoofs_3 = round(no_dropoffs[3] / no_customers_per_no_packages[3], 2)
-                if no_packages_per_category[4] == 0:
-                    avg_span_4 = -10
-                    avg_nodropoofs_4 = -10
-                else:
-                    avg_span_4 = round(spans[4] / no_customers_per_no_packages[4], 2)
-                    avg_nodropoofs_4 = round(
-                        no_dropoffs[4] / no_packages_per_category[4], 2
-                    )
-                    # avg_nodropoofs_4 = round(no_dropoffs[4] / no_customers_per_no_packages[4], 2)
-                file_utils.save_result(
-                    i,
-                    strategy,
-                    (
-                        results["steps"][0],
-                        results["steps"][1],
-                        round(results["drone_travel_distance"], 2),
-                        round(results["truck_travel_distance"], 2),
-                        results["X1"],
-                        results["X2"],
-                        round(results["utilization"], 2),
-                        round(
-                            results["total_package_waiting_time"] / no_packages_total, 2
-                        ),
-                        round(results["total_customer_waiting_time"] / no_customers, 2),
-                        results["total_delay_time"],
-                        avg_span_2,
-                        avg_span_3,
-                        avg_span_4,
-                        avg_nodropoofs_2,
-                        avg_nodropoofs_3,
-                        avg_nodropoofs_4,
-                        results["no_preventions"],
-                    ),
-                    (drone_capacity, no_customers),
-                )
+                        spans: Dict[int, int] = results["spans"]
+                        no_dropoffs: Dict[int, int] = results["no_dropoffs"]
 
+                        # Here we store the number of packages for each group of no_packages.
+                        no_packages_total = file_utils.get_total_no_packages(filename)
+                        no_packages_per_category = (
+                            file_utils.get_no_packages_per_category(
+                                filename, list(spans.keys())
+                            )
+                        )
+                        no_customers_per_no_packages = (
+                            file_utils.get_no_customers_per_no_packages(
+                                filename, list(spans.keys())
+                            )
+                        )
+                        # This is to prevent division by 0 errors
+                        if no_packages_per_category[2] == 0:
+                            avg_span_2: float = -1.0
+                            avg_nodropoofs_2: float = -1.0
+                        else:
+                            avg_span_2 = round(
+                                spans[2] / no_customers_per_no_packages[2], 2
+                            )
+                            avg_nodropoofs_2 = round(
+                                no_dropoffs[2] / no_packages_per_category[2], 2
+                            )
+                        if no_packages_per_category[3] == 0:
+                            avg_span_3: float = -1.0
+                            avg_nodropoofs_3: float = -1.0
+                        else:
+                            avg_span_3 = round(
+                                spans[3] / no_customers_per_no_packages[3], 2
+                            )
+                            avg_nodropoofs_3 = round(
+                                no_dropoffs[3] / no_packages_per_category[3], 2
+                            )
+                        if no_packages_per_category[4] == 0:
+                            avg_span_4: float = -1.0
+                            avg_nodropoofs_4: float = -1.0
+                        else:
+                            avg_span_4 = round(
+                                spans[4] / no_customers_per_no_packages[4], 2
+                            )
+                            avg_nodropoofs_4 = round(
+                                no_dropoffs[4] / no_packages_per_category[4], 2
+                            )
+
+                            file_utils.save_result(
+                                scenario_id=i,
+                                strategy=strategy,
+                                results={
+                                    "steps": results["steps"],
+                                    "drone_travel_distance": round(
+                                        results["drone_travel_distance"], 2
+                                    ),
+                                    "truck_travel_distance": round(
+                                        results["truck_travel_distance"], 2
+                                    ),
+                                    "X1": results["X1"],
+                                    "X2": results["X2"],
+                                    "utilization": round(results["utilization"], 2),
+                                    "total_package_waiting_time": results[
+                                        "total_package_waiting_time"
+                                    ],
+                                    "total_customer_waiting_time": results[
+                                        "total_customer_waiting_time"
+                                    ],
+                                    "total_delay_time": results["total_delay_time"],
+                                    "avg_span_2": avg_span_2,
+                                    "avg_span_3": avg_span_3,
+                                    "avg_span_4": avg_span_4,
+                                    "avg_nodropoofs_2": avg_nodropoofs_2,
+                                    "avg_nodropoofs_3": avg_nodropoofs_3,
+                                    "avg_nodropoofs_4": avg_nodropoofs_4,
+                                    "no_preventions": results["no_preventions"],
+                                    "no_battery_swaps": results["no_battery_swaps"],
+                                    "no_clusters": no_clusters,
+                                },
+                                information={
+                                    "no_drones": no_drones,
+                                    "drone_capacity": drone_capacity,
+                                    "no_customers": no_customers,
+                                    "no_packages_total": no_packages_total,
+                                },
+                            )
 
 stop = timeit.default_timer()
 

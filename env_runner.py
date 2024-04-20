@@ -127,6 +127,10 @@ class EnvRunner:
                     X1 += truck["total_time_in_cluster"]
 
                 utilization: float = X2 / (X1 * no_drones)
+
+                no_battery_swaps: int = sum(
+                    [drone["no_battery_swaps"] for drone in drones]
+                )
                 results: Dict = {
                     "steps": steps,
                     "drone_travel_distance": drone_travel_distance,
@@ -140,5 +144,6 @@ class EnvRunner:
                     "spans": spans,
                     "no_dropoffs": no_dropoffs,
                     "no_preventions": no_preventions,
+                    "no_battery_swaps": no_battery_swaps,
                 }
                 return results

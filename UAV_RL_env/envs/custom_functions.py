@@ -111,6 +111,7 @@ class custom_class(gym.Env):
                 "total_active_time": spaces.Box(low=0, high=float("inf"), shape=()),
                 "total_delay_time": spaces.Box(low=0, high=float("inf"), shape=()),
                 "no_preventions": spaces.Box(low=0, high=float("inf"), shape=()),
+                "no_battery_swaps": spaces.Box(low=0, high=float("inf"), shape=()),
             }
         )
 
@@ -198,13 +199,15 @@ class custom_class(gym.Env):
             lines = file.readlines()
             self.no_customers = len(lines) - 1
 
-            if self.no_customers == 50:
-                self.no_clusters = 2
-            else:
-                self.no_clusters = max(1, self.no_customers // 50)
+            # if self.no_customers == 50:
+            #     self.no_clusters = 2
+            # else:
+            #     self.no_clusters = max(1, self.no_customers // 50)
+
+            # self.no_clusters = max(2, -(self.no_customers // -50))
 
             for line in lines[1:]:
-                x_coord, y_coord, no_packages = line.split(", ")
+                x_coord, y_coord, no_packages = line.split(",")
                 x_coord = int(x_coord)
                 y_coord = int(y_coord)
                 no_packages = int(no_packages)
@@ -410,6 +413,7 @@ def generate_observations(
                 "total_active_time": drone.total_active_time,
                 "total_delay_time": drone.total_delay_time,
                 "no_preventions": drone.no_preventions,
+                "no_battery_swaps": drone.no_battery_swaps,
             }
         )
 
