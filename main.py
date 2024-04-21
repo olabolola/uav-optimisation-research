@@ -1,12 +1,12 @@
 import timeit
+import multiprocessing
 import random
+import statistics
 import os
 from typing import Tuple, Dict, List
 import warnings
-import tqdm
 from gymnasium.envs.registration import register
-import multiprocessing
-import statistics
+import tqdm
 
 from logger_setup import logger
 import file_utils
@@ -35,7 +35,7 @@ strategies: Tuple[str, str, str, str] = (
     "most_packages_first",
 )
 
-NUMBER_OF_ITERATIONS: int = 1
+NUMBER_OF_ITERATIONS: int = 10
 no_clusters_per_no_customers: Dict[int, List[int]] = {
     50: [2],
     100: [2, 4],
@@ -63,9 +63,6 @@ def run_iteration(args):
     spans: Dict[int, List[int]] = results["spans"]
     no_dropoffs: Dict[int, List[int]] = results["no_dropoffs"]
     no_packages_total = file_utils.get_total_no_packages(filename)
-    no_packages_per_category: Dict[int, int] = file_utils.get_no_packages_per_category(
-        filename, list(spans.keys())
-    )
     no_customers_per_no_packages: Dict[int, int] = (
         file_utils.get_no_customers_per_no_packages(filename, [1, 2, 3, 4])
     )
@@ -79,12 +76,11 @@ def run_iteration(args):
             "steps": results["steps"],
             "drone_travel_distance": round(results["drone_travel_distance"], 2),
             "truck_travel_distance": round(results["truck_travel_distance"], 2),
-            "X1": results["X1"],
-            "X2": results["X2"],
-            "utilization": round(results["utilization"], 2),
-            "total_package_waiting_time": results["total_package_waiting_time"],
-            "total_customer_waiting_time": results["total_customer_waiting_time"],
-            "total_delay_time": results["total_delay_time"],
+            "Trucks In-Cluster time": results["X1"],
+            "Drones Active Time": results["X2"],
+            "Drone Utilization": round(results["utilization"], 2),
+            "Total Package Delivery Time": results["total_package_waiting_time"],
+            "Total Customer Delivery Time": results["total_customer_waiting_time"],
             "average_customer_waiting_time": results["average_customer_waiting_time"],
             "average_package_waiting_time": results["average_package_waiting_time"],
             "median_package_waiting_time": results["median_package_waiting_time"],
