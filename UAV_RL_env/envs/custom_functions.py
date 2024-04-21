@@ -1,5 +1,5 @@
 from typing import List, Tuple
-
+import pandas as pd
 import numpy as np
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -31,6 +31,8 @@ class custom_class(gym.Env):
         save_state: bool,
         drone_capacity: int,
     ):
+
+        self.packages: List[celes.Package] = []
 
         # Indicates if we want to save our run or not
         self.save_state: bool = save_state
@@ -93,12 +95,6 @@ class custom_class(gym.Env):
         # Define observation space for truck observations
         truck_observation_space = spaces.Dict(
             {
-                "total_package_waiting_time": spaces.Box(
-                    low=0, high=float("inf"), shape=()
-                ),
-                "total_customer_waiting_time": spaces.Box(
-                    low=0, high=float("inf"), shape=()
-                ),
                 "total_travel_distance": spaces.Box(low=0, high=float("inf"), shape=()),
                 "total_time_in_cluster": spaces.Box(low=0, high=float("inf"), shape=()),
             }
@@ -122,6 +118,14 @@ class custom_class(gym.Env):
                 "customer_time_initial": spaces.Box(low=0, high=float("inf"), shape=()),
                 "customer_time_final": spaces.Box(low=0, high=float("inf"), shape=()),
                 "customer_no_dropoffs": spaces.Box(low=0, high=float("inf"), shape=()),
+                "customer_waiting_time": spaces.Box(low=0, high=float("inf"), shape=()),
+            }
+        )
+
+        # Define observation space for customer observations
+        package_observation_space = spaces.Dict(
+            {
+                "package_waiting_time": spaces.Box(low=0, high=float("inf"), shape=()),
             }
         )
 
@@ -137,6 +141,10 @@ class custom_class(gym.Env):
                 "customer_observations": spaces.Tuple(
                     [customer_observation_space] * self.no_customers
                 ),
+                "package_observations": spaces.Tuple(
+                    [package_observation_space]
+                    * custom_class.get_total_no_packages(self.load_file)
+                ),
             }
         )
 
@@ -148,10 +156,29 @@ class custom_class(gym.Env):
         # 2) When all the packages are delivered
         self.done: bool = False
 
+    @staticmethod
+    def get_total_no_packages(filename: str) -> int:
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(filename)
+
+        # Calculate the sum of the "no_packages" column
+        total = df["no_packages"].sum()
+
+        return total
+
     def step(self, action: Tuple[List[str], ...]):
 
         # actions is a list containing two elements; a list of truck actions and a list of drone actions
         # for each truck and drone respectively
+
+        # Increment all customer waiting times and package waiting times
+        for customer in self.customers:
+            if customer.no_of_packages != 0:
+                customer.customer_waiting_time += 1
+
+            for package in customer.packages:
+                if not package.delivered:
+                    package.waiting_time += 1
 
         # For now trucks either move towards a certain position or just stay still
         truck_actions: List[str] = action[0]
@@ -199,13 +226,6 @@ class custom_class(gym.Env):
             lines = file.readlines()
             self.no_customers = len(lines) - 1
 
-            # if self.no_customers == 50:
-            #     self.no_clusters = 2
-            # else:
-            #     self.no_clusters = max(1, self.no_customers // 50)
-
-            # self.no_clusters = max(2, -(self.no_customers // -50))
-
             for line in lines[1:]:
                 x_coord, y_coord, no_packages = line.split(",")
                 x_coord = int(x_coord)
@@ -217,6 +237,7 @@ class custom_class(gym.Env):
                 for _ in range(no_packages):
                     package = celes.Package(customer)
                     customer.add_package(package)
+                    self.packages.append(package)
 
                 self.customers.append(customer)
 
@@ -353,11 +374,6 @@ class custom_class(gym.Env):
 
     def _take_drone_action(self, drone: Drone, action: str):
 
-        # TODO are we double counting here?
-        # Each step we want to add 1 to the waiting time of the packages
-        for package in drone.packages:
-            package.waiting_time += 1
-
         # TODO removed steadystate consumption
         if drone.waiting:
             drone.steadystate_consumption()
@@ -369,16 +385,10 @@ class custom_class(gym.Env):
         else:
             raise NotImplementedError("Unrecognised drone action.")
 
-        # TODO we check in the function but maybe only call for drones on truck?
-        drone.charge()
+        # Drones no longer charge we just do battery swaps.
+        # drone.charge()
 
     def _take_truck_action(self, truck: Truck, action: str):
-
-        # TODO are we double counting here?
-        # Each step we want to add 1 to the waiting time of the packages
-        for cluster_packages in truck.packages.values():
-            for package in cluster_packages:
-                package.waiting_time += 1
 
         # For now action is a 2-tuple that tells the truck where to go to
         if action == "go_to_next_cluster":
@@ -397,8 +407,6 @@ def generate_observations(
     for truck in trucks:
         truck_observations.append(
             {
-                "total_package_waiting_time": truck.total_package_waiting_time,
-                "total_customer_waiting_time": truck.total_customer_waiting_time,
                 "total_travel_distance": truck.total_travel_distance,
                 "total_time_in_cluster": truck.total_time_in_cluster,
             }
@@ -417,8 +425,9 @@ def generate_observations(
             }
         )
 
-    # Collect customer observations
+    # Collect customer observations and package observations
     customer_observations = []
+    package_observations = []
     for customer in customers:
         customer_observations.append(
             {
@@ -426,11 +435,16 @@ def generate_observations(
                 "customer_time_final": customer.time_final,
                 "customer_time_initial": customer.time_initial,
                 "customer_no_dropoffs": customer.no_dropoffs,
+                "customer_waiting_time": customer.customer_waiting_time,
             }
         )
+
+        for package in customer.packages:
+            package_observations.append({"package_waiting_time": package.waiting_time})
 
     return {
         "truck_observations": truck_observations,
         "drone_observations": drone_observations,
         "customer_observations": customer_observations,
+        "package_observations": package_observations,
     }

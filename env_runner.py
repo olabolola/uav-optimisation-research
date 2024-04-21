@@ -1,5 +1,5 @@
 from typing import List, Dict
-
+import statistics
 import gymnasium as gym
 
 
@@ -92,10 +92,10 @@ class EnvRunner:
                 # The span is the time between the inital and final package deliveries for each customer
                 # We store seperate values for each original_no_packages
                 # Spans will be a dict with original_no_packages as the key and the total span as the value
-                spans: Dict[int, int] = {2: 0, 3: 0, 4: 0}
+                spans: Dict[int, List[float]] = {2: [], 3: [], 4: []}
 
                 # Here we store the sum of the number of dropoffs for each customer grouped by original_no_packages
-                no_dropoffs: Dict[int, int] = {2: 0, 3: 0, 4: 0}
+                no_dropoffs: Dict[int, List[float]] = {2: [], 3: [], 4: []}
 
                 # How many times drones were prevented from leaving the truck due to battery constraints
                 no_preventions: int = 0
@@ -103,16 +103,28 @@ class EnvRunner:
                 drones = obs["drone_observations"]
                 trucks = obs["truck_observations"]
                 customers = obs["customer_observations"]
+                packages = obs["package_observations"]
+
+                customer_waiting_times: List[float] = [
+                    float(customer["customer_waiting_time"]) for customer in customers
+                ]
+
+                package_waiting_times: List[float] = [
+                    float(package["package_waiting_time"]) for package in packages
+                ]
 
                 for customer in customers:
                     if customer["original_no_packages"] in spans.keys():
-                        spans[customer["original_no_packages"]] += (
-                            customer["customer_time_final"]
-                            - customer["customer_time_initial"]
+                        # TODO look at this
+                        spans[customer["original_no_packages"]].append(
+                            float(
+                                customer["customer_time_final"]
+                                - customer["customer_time_initial"]
+                            )
                         )
-                        no_dropoffs[customer["original_no_packages"]] += customer[
-                            "customer_no_dropoffs"
-                        ]
+                        no_dropoffs[customer["original_no_packages"]].append(
+                            float(customer["customer_no_dropoffs"])
+                        )
 
                 for drone in drones:
                     drone_travel_distance += drone["total_travel_distance"]
@@ -121,8 +133,6 @@ class EnvRunner:
                     no_preventions += drone["no_preventions"]
 
                 for truck in trucks:
-                    total_package_waiting_time += truck["total_package_waiting_time"]
-                    total_customer_waiting_time += truck["total_customer_waiting_time"]
                     truck_travel_distance += truck["total_travel_distance"]
                     X1 += truck["total_time_in_cluster"]
 
@@ -138,8 +148,20 @@ class EnvRunner:
                     "X1": X1,
                     "X2": X2,
                     "utilization": utilization,
-                    "total_package_waiting_time": total_package_waiting_time,
-                    "total_customer_waiting_time": total_customer_waiting_time,
+                    "total_package_waiting_time": sum(package_waiting_times),
+                    "total_customer_waiting_time": sum(customer_waiting_times),
+                    "average_customer_waiting_time": statistics.mean(
+                        customer_waiting_times
+                    ),
+                    "average_package_waiting_time": statistics.mean(
+                        package_waiting_times
+                    ),
+                    "median_package_waiting_time": statistics.median(
+                        package_waiting_times
+                    ),
+                    "median_customer_waiting_time": statistics.median(
+                        customer_waiting_times
+                    ),
                     "total_delay_time": total_delay_time,
                     "spans": spans,
                     "no_dropoffs": no_dropoffs,

@@ -1,6 +1,6 @@
-from typing import List, Tuple, Dict, Any
-import pandas as pd
+from typing import List, Dict, Any, Union
 import os
+import pandas as pd
 
 # Define the schema for the results DataFrame
 RESULTS_SCHEMA: List[Dict[str, Any]] = [
@@ -9,29 +9,39 @@ RESULTS_SCHEMA: List[Dict[str, Any]] = [
     {"name": "no_drones", "type": int},
     {"name": "drone_capacity", "type": int},
     {"name": "no_customers", "type": int},
-    {"name": "total_time", "type": int},
-    {"name": "package_delivery_time", "type": int},
-    {"name": "drone_travel_distance", "type": float},
-    {"name": "truck_travel_distance", "type": float},
-    {"name": "total_cluster_time", "type": int},
-    {"name": "total_active_time", "type": int},
-    {"name": "utilization", "type": float},
-    {"name": "avg_package_wait_time", "type": float},
-    {"name": "avg_customer_wait_time", "type": float},
-    {"name": "total_delay_time", "type": int},
+    {"name": "no_clusters", "type": int},
+    {"name": "Total Distribution Time", "type": int},
+    {"name": "Total Time to Deliver All Packages", "type": int},
+    {"name": "Drones Travel Distance", "type": float},
+    {"name": "Trucks Travel Distance", "type": float},
+    {"name": "Trucks In-Cluster time", "type": int},
+    {"name": "Drones Active Time", "type": int},
+    {"name": "Drone Utilization", "type": float},
+    {"name": "Average Package Delivery Time", "type": float},
+    {"name": "Average Customer Delivery Time", "type": float},
+    {"name": "Median Package Delivery Time", "type": Union[float, int]},
+    {"name": "Median Customer Delivery Time", "type": Union[float, int]},
     {"name": "avg_span_2", "type": float},
     {"name": "avg_span_3", "type": float},
     {"name": "avg_span_4", "type": float},
     {"name": "avg_nodropoffs_2", "type": float},
     {"name": "avg_nodropoffs_3", "type": float},
     {"name": "avg_nodropoffs_4", "type": float},
-    {"name": "no_preventions", "type": int},
-    {"name": "no_battery_swaps", "type": int},
-    {"name": "no_clusters", "type": int},
+    {"name": "median_span_2", "type": Union[float, int]},
+    {"name": "median_span_3", "type": Union[float, int]},
+    {"name": "median_span_4", "type": Union[float, int]},
+    {"name": "median_nodropoffs_2", "type": Union[float, int]},
+    {"name": "median_nodropoffs_3", "type": Union[float, int]},
+    {"name": "median_nodropoffs_4", "type": Union[float, int]},
+    {"name": "no_of_customers_with_1_package", "type": int},
+    {"name": "no_of_customers_with_2_package", "type": int},
+    {"name": "no_of_customers_with_3_package", "type": int},
+    {"name": "no_of_customers_with_4_package", "type": int},
+    {"name": "The Number of Battery Swaps", "type": int},
 ]
 
 
-def get_no_packages_per_category(filename: str, keys: List[int]):
+def get_no_packages_per_category(filename: str, keys: List[int]) -> Dict[int, int]:
     no_packages_per_category = {no: 0 for no in keys}
     with open(filename, encoding="utf-8") as f:
         lines = f.readlines()
@@ -42,14 +52,13 @@ def get_no_packages_per_category(filename: str, keys: List[int]):
     return no_packages_per_category
 
 
-def get_no_customers_per_no_packages(filename: str, keys: List[int]):
+def get_no_customers_per_no_packages(filename: str, keys: List[int]) -> Dict[int, int]:
     no_customers_per_no_packages = {no: 0 for no in keys}
     with open(filename, encoding="utf-8") as f:
         lines = f.readlines()
         for line in lines[1:]:
             no_packages = int(line.split(",")[-1])
-            if no_packages > 1:
-                no_customers_per_no_packages[no_packages] += 1
+            no_customers_per_no_packages[no_packages] += 1
     return no_customers_per_no_packages
 
 
@@ -78,29 +87,35 @@ def save_result(
         "no_drones": information["no_drones"],
         "drone_capacity": information["drone_capacity"],
         "no_customers": information["no_customers"],
-        "total_time": results["steps"][0],
-        "package_delivery_time": results["steps"][1],
-        "drone_travel_distance": round(results["drone_travel_distance"], 2),
-        "truck_travel_distance": round(results["truck_travel_distance"], 2),
-        "total_cluster_time": results["X1"],
-        "total_active_time": results["X2"],
-        "utilization": round(results["utilization"], 2),
-        "avg_package_wait_time": round(
-            results["total_package_waiting_time"] / information["no_packages_total"], 2
-        ),
-        "avg_customer_wait_time": round(
-            results["total_customer_waiting_time"] / information["no_customers"], 2
-        ),
-        "total_delay_time": results["total_delay_time"],
+        "no_clusters": results["no_clusters"],
+        "Total Distribution Time": results["steps"][0],
+        "Drones Travel Distance": round(results["drone_travel_distance"], 2),
+        "Trucks Travel Distance": round(results["truck_travel_distance"], 2),
+        "Trucks In-Cluster time": results["X1"],
+        "Drones Active Time": results["X2"],
+        "Drone Utilization": round(results["utilization"], 2),
         "avg_span_2": results["avg_span_2"],
         "avg_span_3": results["avg_span_3"],
         "avg_span_4": results["avg_span_4"],
         "avg_nodropoffs_2": results["avg_nodropoofs_2"],
         "avg_nodropoffs_3": results["avg_nodropoofs_3"],
         "avg_nodropoffs_4": results["avg_nodropoofs_4"],
-        "no_preventions": results["no_preventions"],
-        "no_battery_swaps": results["no_battery_swaps"],
-        "no_clusters": results["no_clusters"],
+        "median_span_2": results["avg_span_2"],
+        "median_span_3": results["avg_span_3"],
+        "median_span_4": results["avg_span_4"],
+        "median_nodropoffs_2": results["avg_nodropoofs_2"],
+        "median_nodropoffs_3": results["avg_nodropoofs_3"],
+        "median_nodropoffs_4": results["avg_nodropoofs_4"],
+        "The Number of Battery Swaps": results["no_battery_swaps"],
+        "Total Time to Deliver All Packages": results["steps"][1],
+        "Average Customer Delivery Time": results["average_customer_waiting_time"],
+        "Average Package Delivery Time": results["average_package_waiting_time"],
+        "Median Package Delivery Time": results["median_package_waiting_time"],
+        "Median Customer Delivery Time": results["median_customer_waiting_time"],
+        "no_of_customers_with_1_package": results["no_of_customers_with_1_package"],
+        "no_of_customers_with_2_package": results["no_of_customers_with_2_package"],
+        "no_of_customers_with_3_package": results["no_of_customers_with_3_package"],
+        "no_of_customers_with_4_package": results["no_of_customers_with_4_package"],
     }
 
     # Validate the data against the schema
@@ -108,7 +123,7 @@ def save_result(
         if col["name"] in data:
             assert isinstance(
                 data[col["name"]], col["type"]
-            ), f"Invalid type for column '{col['name']}'"
+            ), f"Invalid type for column '{col['name']}' expected '{col["type"]}' got '{type(data[col["name"]])}'"
         else:
             raise ValueError(f"Missing column '{col['name']}' in result data")
 

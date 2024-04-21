@@ -5,19 +5,17 @@ from sklearn.cluster import KMeans
 import pandas as pd
 
 DRONE_BATTERY_SWAP_DELAY: int = 30
-# TODO this was 120
 CUSTOMER_PACKAGE_DELIVERY_DELAY: int = 120
 
 
-# TODO passive_battery_consume was 0.005
 class Drone:
 
     def __init__(
         self,
         position: Position,
         home_truck: Truck,
-        active_battery_consume: float = 0.05,
-        passive_battery_consume: float = 0.005,
+        active_battery_consume: float = 0.005,
+        passive_battery_consume: float = 0.001,
         drone_speed: int = 10,
         battery: float = 100,
         drone_id: Optional[int] = None,
@@ -213,10 +211,6 @@ class Drone:
                 # We want to wait some amount of time for this battery swap
                 self.swap_battery()
                 self.battery_swap_timer += 1
-
-                if self.first_prevent:
-                    self.first_prevent = False
-                    self.no_preventions += 1
                 return
 
             if self.battery_swap_timer == DRONE_BATTERY_SWAP_DELAY:
@@ -224,14 +218,6 @@ class Drone:
             elif self.battery_swap_timer > 0:
                 self.battery_swap_timer += 1
                 return
-
-            # Reset the first_prevent boolean for prevention counter
-            # TODO look at removing this now that we have battery swaps
-            self.first_prevent = True
-
-            # customer_position contains the position of the customer we are delivering to right now
-            # customer_position = Position(self.packages[0].customer.position.x, self.packages[0].customer.position.y)
-            # customer_position = self.packages[0].customer.position
 
             arrived = False
 
@@ -260,15 +246,27 @@ class Drone:
                     # This is one of the packages we are delivering to the customer
                     package = self.packages[0]
 
+                    this_customers_packages: List[Package] = [
+                        package
+                        for package in self.packages
+                        if package.customer.position == self.position
+                    ]
+                    customer_we_are_now_on: Customer = this_customers_packages[
+                        0
+                    ].customer
+
+                    for customer_package in this_customers_packages:
+                        customer_package.delivered = True
+
                     # If we have arrived then we add 1 to the number of dropoffs this customer has
-                    package.customer.no_dropoffs += 1
+                    customer_we_are_now_on.no_dropoffs += 1
 
                     # decrement the number of customers the drone has left to deliver this trip
                     self.no_customers_in_list -= 1
 
                     # If the inital time hasn't been set yet then this is the first package to be delivered
-                    if package.customer.time_initial == -1:
-                        package.customer.time_initial = package.waiting_time
+                    if customer_we_are_now_on.time_initial == -1:
+                        customer_we_are_now_on.time_initial = package.waiting_time
                     old_length = len(self.packages)
 
                     self.packages[:] = [
@@ -277,16 +275,18 @@ class Drone:
                         if package.customer.position != self.position
                     ]
 
-                    package.customer.no_of_packages -= old_length - len(self.packages)
-                    if package.customer.no_of_packages == 0:
+                    customer_we_are_now_on.no_of_packages -= old_length - len(
+                        self.packages
+                    )
+
+                    assert customer_we_are_now_on.no_of_packages >= 0
+
+                    if customer_we_are_now_on.no_of_packages == 0:
                         # The customer has now been fully serviced
-                        unserviced_customers.remove(package.customer)
-                        # We add the customer_waiting_time
-                        self.home_truck.total_customer_waiting_time += (
-                            package.waiting_time
-                        )
+                        unserviced_customers.remove(customer_we_are_now_on)
                         # Since all packages have been delivered this is the final time of the span
-                        package.customer.time_final = package.waiting_time
+                        customer_we_are_now_on.time_final = package.waiting_time
+
                     # Also add the total package waiting time for the packages delivered
                     self.home_truck.total_package_waiting_time += (
                         package.waiting_time * (old_length - len(self.packages))
@@ -328,6 +328,7 @@ class Package:
         self.height: float = height
         self.width: float = width
         self.waiting_time: int = 0
+        self.delivered: bool = False
 
 
 class Position:
@@ -421,6 +422,9 @@ class Customer:
 
         # This is the number of times are drone arrives at this customer
         self.no_dropoffs: int = 0
+
+        # The time customers wait until all of their packages have been delivered
+        self.customer_waiting_time: int = 0
 
     def get_customer_info(self) -> Dict[str, Union[int, str]]:
         # TODO convert this to a json method
