@@ -1254,7 +1254,7 @@ def get_euclidean_distance(position1: Position, position2: Position) -> float:
 
 def get_manhattan_distance(position1: Position, position2: Position) -> float:
     """
-    Return the msanhattan distance between two points
+    Return the manhattan distance between two points
     """
     return abs(position1.x - position2.x) + abs(position1.y - position2.y)
 
