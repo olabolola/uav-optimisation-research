@@ -22,7 +22,7 @@ def merge_results(results_dir: str, prefix: str):
 
     # Write the merged DataFrame to the consolidated results file
     merged_df.to_csv(
-        os.path.join(results_dir, "results_new_strategies.csv"), index=False
+        os.path.join(results_dir, "results.csv"), index=False
     )
 
     # Clean up the process-specific files

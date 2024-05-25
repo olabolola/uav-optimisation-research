@@ -7,6 +7,7 @@ from typing import Tuple, Dict, List
 import warnings
 from gymnasium.envs.registration import register
 import tqdm
+from UAV_RL_env.envs.celes import Strategy
 
 from logger_setup import logger
 import file_utils
@@ -29,13 +30,17 @@ no_customers_values: Tuple[int, ...] = (50, 100, 200, 400)
 drone_capacity_values: Tuple[int, ...] = (1, 2, 3)
 no_drones_values: Tuple[int, ...] = (1, 2, 3, 4)
 strategies: Tuple[str, str, str, str] = (
+    Strategy.FARTHEST_PACKAGE_FIRST_MPA.value,
+    Strategy.FARTHEST_PACKAGE_FIRST.value,
+    Strategy.CLOSEST_PACKAGE_FIRST.value,
+    Strategy.MOST_PACKAGES_FIRST.value,
     # "farthest_package_first_MPA",
     # "farthest_package_first",
     # "closest_package_first",
     # "most_packages_first",
-    "random_package_first",
-    "longest_waiting_package_first",
-    "densest_package_first",
+    # "random_package_first",
+    # "longest_waiting_package_first",
+    # "densest_package_first",
 )
 
 NUMBER_OF_ITERATIONS: int = 10
