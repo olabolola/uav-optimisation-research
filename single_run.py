@@ -1,5 +1,4 @@
 import timeit
-import multiprocessing
 import random
 import statistics
 import os
@@ -38,7 +37,7 @@ strategies: Tuple[str, str, str, str] = (
     "densest_package_first",
 )
 
-NUMBER_OF_ITERATIONS: int = 10
+NUMBER_OF_ITERATIONS: int = 1
 no_clusters_per_no_customers: Dict[int, List[int]] = {
     50: [2],
     100: [2, 4],
@@ -70,7 +69,7 @@ def run_iteration(args):
         file_utils.get_no_customers_per_no_packages(filename, [1, 2, 3, 4])
     )
 
-    process_id = multiprocessing.current_process()._identity[0]
+    process_id = os.getpid()
     file_utils.save_result(
         process_id=process_id,
         scenario_id=i,
@@ -144,7 +143,6 @@ if __name__ == "__main__":
         * len(drone_capacity_values)
     )
 
-    pool = multiprocessing.Pool()
     progress_bar = tqdm.tqdm(
         total=TOTAL_NO_ITERATIONS, desc="Progress", unit="iteration"
     )
@@ -167,12 +165,11 @@ if __name__ == "__main__":
                                 )
                             )
 
-    for _ in pool.imap_unordered(run_iteration, args_list):
+    for args in args_list:
+        print(args)
+        run_iteration(args)
         progress_bar.update(1)
-
-    pool.close()
-    pool.join()
-
+    # run_iteration(("farthest_package_first", 2, 50, 2, 1, 0))
     stop = timeit.default_timer()
 
     logger.info("Time to complete simulation: %f", stop - start)
