@@ -543,6 +543,9 @@ class Truck:
         # Here we store the total time this truck spent in a cluster
         self.total_time_in_cluster: float = 0
 
+        # TODO remove customers from here once there packages are delivered
+        self.priority_customers: Set[Customer] = set()
+
     def load_package(self, package: Package, cluster: Tuple[int, ...]):
         """
         This function adds a package to the cluster list specified in the truck dict.
@@ -587,34 +590,33 @@ class Truck:
                 )
 
     def select_initial_package(self, drone: Drone, strategy: str) -> Package:
-        if strategy == "farthest_package_first":
-            package = get_farthest_package(
-                position=self.position, packages=self.packages[self.current_cluster]
-            )
-        elif strategy == "closest_package_first":
-            package = get_closest_package(
-                position=self.position, packages=self.packages[self.current_cluster]
-            )
-        elif strategy == "most_packages_first":
-            package = get_package_for_customer_with_most_packages(
-                position=self.position, packages=self.packages[self.current_cluster]
-            )
-        elif strategy == "farthest_package_first_MPA":
-            package = get_initial_package_farthest_package_first_MPA(
-                position=self.position,
-                packages=self.packages[self.current_cluster],
-                drone_capacity=drone.capacity,
-            )
-        elif strategy == "random_package_first":
-            package = get_random_package(packages=self.packages[self.current_cluster])
-        elif strategy == "longest_waiting_package_first":
-            package = get_longest_waiting_package(
-                packages=self.packages[self.current_cluster]
-            )
-        elif strategy == "densest_package_first":
-            package = get_package_with_max_density(
-                packages=self.packages[self.current_cluster]
-            )
+        # Try to get something from priority customers first
+        priority_customer_packages: List[Package] = [
+            package
+            for package in self.packages[self.current_cluster]
+            if package.customer in self.priority_customers
+        ]
+        if strategy in ("farthest_package_first", "farthest_package_first_MPA"):
+
+            if len(priority_customer_packages) > 0:
+                package = get_farthest_package(
+                    position=self.position, packages=priority_customer_packages
+                )
+            else:
+                package = get_farthest_package(
+                    position=self.position, packages=self.packages[self.current_cluster]
+                )
+        elif strategy in ("most_packages_first", "most_packages_first_MPA"):
+            if len(priority_customer_packages) > 0:
+                package = get_farthest_package(
+                    position=self.position, packages=priority_customer_packages
+                )
+            else:
+                package = get_package_for_customer_with_most_packages(
+                    position=self.position, packages=self.packages[self.current_cluster]
+                )
+        else:
+            raise ValueError("No strategy!")
 
         return package
 
@@ -634,21 +636,80 @@ class Truck:
         package.customer.no_packages_still_on_truck -= 1
         drone.no_customers_in_list += 1
 
-    def get_next_package(
-        self, package: Package, packages: List[Package], strategy: str
+    def select_any_package_for_customer(
+        self, customer: Customer, packages: List[Package]
+    ) -> Optional[Package]:
+        for package in packages:
+            if package.customer == customer:
+                return package
+        return None
+
+    def get_next_package_mpa(
+        self, sorted_packages: List[Package], drone: Drone
     ) -> Package:
-        if strategy == "most_packages_first":
-            next_package: Package = get_package_for_customer_with_most_packages(
-                position=package.customer.position,
-                packages=packages,
-                is_initial_assignment=False,
-            )
-        else:
-            next_package: Package = get_next_closest_package(
+        # In MPA we want to see if we are disrupting the optimal delivery...
+        # If we are we will skip this package
+        next_package: Package = None
+        for package in sorted_packages:
+            if will_delivering_this_package_disrupt_optimal_no_dropoffs(
+                total_drone_capacity=drone.capacity,
+                remaining_drone_capacity=drone.capacity - len(drone.packages),
                 package=package,
-                packages=packages,
+            ):
+                # Go to next closest package
+                # We want to continue to do this until we run out of packages
+                # If we run out of packages we will just deliver to the closest
+                # If we can't deliver because of max charge things we will just do closest
+                continue
+            else:
+                if drone.can_make_trip(
+                    start_position=self.position,
+                    packages=drone.packages + [package],
+                    charge=100,
+                ):
+                    next_package: Package = package
+                break
+        if not next_package:
+            next_package = sorted_packages[0]
+
+        return next_package
+
+    def get_next_package(
+        self,
+        last_assigned_package: Package,
+        packages: List[Package],
+        strategy: str,
+        drone: Drone,
+    ) -> Package:
+
+        # If we have just loaded a customer's package and that same customer still has more packages then we will load them...
+        any_customer_package = self.select_any_package_for_customer(
+            customer=last_assigned_package.customer, packages=packages
+        )
+
+        if any_customer_package:
+            return any_customer_package
+
+        # If the last assigned package's customer has no more packages on the truck we will begin looking around.
+        if not any_customer_package:
+            sorted_packages_from_this_one: List[Package] = sorted(
+                packages,
+                key=lambda x: get_euclidean_distance(
+                    last_assigned_package.customer.position, x.customer.position
+                ),
             )
 
+            # In MPA we want to see if we are disrupting the optimal delivery...
+            # If we are we will skip this package
+            if "mpa" in strategy.lower():
+                next_package: Package = self.get_next_package_mpa(
+                    sorted_packages=sorted_packages_from_this_one, drone=drone
+                )
+            else:
+                next_package: Package = sorted_packages_from_this_one[0]
+
+        # Prioritise this customer!
+        self.priority_customers.add(next_package.customer)
         return next_package
 
     def load_drone_package(self, drone: Drone):
@@ -669,9 +730,10 @@ class Truck:
         while len(drone.packages) < drone.capacity:
             if len(self.packages[self.current_cluster]) > 0:
                 package_to_deliver = self.get_next_package(
-                    package=drone.packages[-1],
+                    last_assigned_package=drone.packages[-1],
                     packages=self.packages[self.current_cluster],
                     strategy=self.strategy,
+                    drone=drone,
                 )
 
                 if drone.can_make_trip(
@@ -957,9 +1019,9 @@ def customer_not_already_in_list(
 
 
 class Strategy(Enum):
+    MOST_PACKAGES_FIRST_MPA: str = "most_packages_first_MPA"
     MOST_PACKAGES_FIRST: str = "most_packages_first"
     FARTHEST_PACKAGE_FIRST: str = "farthest_package_first"
-    CLOSEST_PACKAGE_FIRST: str = "closest_package_first"
     FARTHEST_PACKAGE_FIRST_MPA: str = "farthest_package_first_MPA"
 
 
@@ -1015,60 +1077,6 @@ def get_farthest_package(position: Position, packages: List[Package]) -> Package
     return farthest_package
 
 
-def get_longest_waiting_package(packages: List[Package]) -> Package:
-    max_waiting = -1
-    max_waiting_package = None
-
-    for package in packages:
-
-        if package.waiting_time > max_waiting:
-            max_waiting = package.waiting_time
-            max_waiting_package = package
-
-    return max_waiting_package
-
-
-def calculate_packages_area(packages: List[Package]) -> Tuple[float, float]:
-    """
-    Calculate the area based on the minimum and maximum x and y coordinates of the packages.
-    """
-    min_x = min(package.customer.position.x for package in packages)
-    max_x = max(package.customer.position.x for package in packages)
-    min_y = min(package.customer.position.y for package in packages)
-    max_y = max(package.customer.position.y for package in packages)
-
-    length = max_x - min_x
-    width = max_y - min_y
-
-    return length, width
-
-
-def get_package_with_max_density(packages: List[Package]) -> Package:
-    """
-    Return the package with the maximum delivery density.
-    """
-    length, width = calculate_packages_area(packages)
-    area = length * width
-    num_packages = len(packages)
-    average_spacing = (area / num_packages) ** 0.5
-    density_threshold = average_spacing / 2  # Adjust this factor as needed
-
-    def delivery_density(pkg: Package) -> int:
-        return sum(
-            1
-            for p in packages
-            if get_euclidean_distance(pkg.customer.position, p.customer.position)
-            < density_threshold
-        )
-
-    sorted_packages = sorted(packages, key=delivery_density, reverse=True)
-    return sorted_packages[0]
-
-
-def get_random_package(packages: List[Package]) -> Package:
-    return random.choice(packages)
-
-
 def get_closest_package(position: Position, packages: List[Package]) -> Package:
     min_distance = float("inf")
     closest_package = None
@@ -1083,73 +1091,59 @@ def get_closest_package(position: Position, packages: List[Package]) -> Package:
 
 
 def get_package_for_customer_with_most_packages(
-    position: Position, packages: List[Package], is_initial_assignment: bool = True
+    position: Position, packages: List[Package]
 ) -> Package:
-    customer_package_count: Dict[Customer, int] = defaultdict(int)
+
+    max_no_packages: int = -1
+    customer_with_max_packages: Customer
+    packages_for_max_customer_on_truck: List[Package] = []
 
     for package in packages:
-        customer_package_count[package.customer] += 1
-
-    # Find the customers with the most packages
-    max_packages = max(customer_package_count.values(), default=-1)
-    customers_with_max_packages = [
-        customer
-        for customer, count in customer_package_count.items()
-        if count == max_packages
-    ]
-
-    # If there's a tie, find the farthest customer among them
-    farthest_customer: Customer = max(
-        customers_with_max_packages,
-        key=lambda customer: get_euclidean_distance(position, customer.position),
-    )
-
-    closest_customer: Customer = min(
-        customers_with_max_packages,
-        key=lambda customer: get_euclidean_distance(position, customer.position),
-    )
-
-    customer_to_compare = (
-        farthest_customer if is_initial_assignment else closest_customer
-    )
-    # Return any package for that customer
-    for package in packages:
-        if package.customer == customer_to_compare:
-            return package
-
-    # return None  # If no packages are found, which shouldn't happen with valid input
-
-
-def get_initial_package_farthest_package_first_MPA(
-    position: Position, packages: List[Package], drone_capacity: int
-) -> Optional[Package]:
-    customer_package_count = defaultdict(int)
-    customers: Set[Customer] = set()
+        if package.customer.original_no_packages > max_no_packages:
+            max_no_packages = package.customer.original_no_packages
+            customer_with_max_packages = package.customer
 
     for package in packages:
-        customer_package_count[package.customer] += 1
-        customers.add(package.customer)
+        if package.customer == customer_with_max_packages:
+            packages_for_max_customer_on_truck.append(package)
 
-    eligible_customers = [
-        customer
-        for customer in customers
-        if customer_package_count[customer] <= drone_capacity
-    ]
+    farthest_package: Package = get_farthest_package(
+        position=position, packages=packages_for_max_customer_on_truck
+    )
 
-    if eligible_customers:
-        farthest_customer = max(
-            eligible_customers,
-            key=lambda customer: get_euclidean_distance(position, customer.position),
-        )
-    else:
-        farthest_customer = max(
-            customers,
-            key=lambda customer: get_euclidean_distance(position, customer.position),
+    return farthest_package
+
+
+def ceildiv(a, b):
+    return -(a // -b)
+
+
+def will_delivering_this_package_disrupt_optimal_no_dropoffs(
+    total_drone_capacity: int, remaining_drone_capacity: int, package: Package
+) -> bool:
+
+    no_of_packages_on_truck_for_this_package: int = package.customer.no_of_packages
+
+    optimal_no_dropoffs: int = ceildiv(
+        no_of_packages_on_truck_for_this_package, total_drone_capacity
+    )
+
+    assert optimal_no_dropoffs >= 1
+
+    # Packages left if we deliver this one
+    no_packages_left_if_delivered = max(
+        no_of_packages_on_truck_for_this_package - remaining_drone_capacity, 0
+    )
+
+    # Calculate the new optimal number of dropoffs if we deliver this package
+    new_optimal_no_dropoffs = ceildiv(
+        no_packages_left_if_delivered, total_drone_capacity
+    )
+
+    if new_optimal_no_dropoffs > optimal_no_dropoffs:
+        raise ValueError(
+            f"{total_drone_capacity}, {remaining_drone_capacity}, {no_of_packages_on_truck_for_this_package}"
         )
 
-    if farthest_customer:
-        for package in packages:
-            if package.customer == farthest_customer:
-                return package  # Return any package of the farthest customer that is not yet delivered
-
-    return None
+    # Check if delivering this package will increase the optimal number of dropoffs
+    return new_optimal_no_dropoffs == optimal_no_dropoffs

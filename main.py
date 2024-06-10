@@ -32,15 +32,8 @@ no_drones_values: Tuple[int, ...] = (1, 2, 3, 4)
 strategies: Tuple[str, str, str, str] = (
     Strategy.FARTHEST_PACKAGE_FIRST_MPA.value,
     Strategy.FARTHEST_PACKAGE_FIRST.value,
-    Strategy.CLOSEST_PACKAGE_FIRST.value,
     Strategy.MOST_PACKAGES_FIRST.value,
-    # "farthest_package_first_MPA",
-    # "farthest_package_first",
-    # "closest_package_first",
-    # "most_packages_first",
-    # "random_package_first",
-    # "longest_waiting_package_first",
-    # "densest_package_first",
+    Strategy.MOST_PACKAGES_FIRST_MPA.value,
 )
 
 NUMBER_OF_ITERATIONS: int = 10
