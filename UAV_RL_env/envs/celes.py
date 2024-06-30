@@ -1,14 +1,31 @@
 from __future__ import annotations
 from typing import List, Optional, Tuple, Dict, Union, Set
-from collections import defaultdict
-
-import random
+from dataclasses import dataclass
 from sklearn.cluster import KMeans
 import pandas as pd
 from enum import Enum
 
 DRONE_BATTERY_SWAP_DELAY: int = 30
 CUSTOMER_PACKAGE_DELIVERY_DELAY: int = 120
+
+
+@dataclass
+class TripData:
+    trip_id: str
+    strategy: Strategy
+    travel_distance: float
+    trip_time: int
+    packages: List[Package]
+    customers: List[Customer]
+    battery_swapped: bool
+    decision_data: List[DecisionData]
+
+
+class DecisionData(str, Enum):
+    INITIAL_PACKAGE: str = "INITIAL_PACKAGE"
+    INITIAL_PACKAGE_PRIORITY: str = "INITIAL_PACKAGE_PRIORITY"
+    NEXT_PACKAGE_SAME_CUSTOMER: str = "NEXT_PACKAGE_SAME_CUSTOMER"
+    NEXT_PACKAGE_CLOSEST: str = "NEXT_PACKAGE_CLOSEST"
 
 
 class Drone:
@@ -89,10 +106,11 @@ class Drone:
 
         self.battery_swap_timer: int = 0
 
+        # Metric to store some data on each trip
+        self.trips: List[TripData] = []
+
     # When a drone returns from a trip delivering packages, we call this function to load additional packages
     def load_package(self):
-        # self.home_truck.load_drone_package(self)
-
         self.home_truck.load_drone_package(drone=self)
 
     def can_make_trip(
@@ -227,10 +245,6 @@ class Drone:
                 packages=self.packages,
                 charge=self.battery,
             ):
-                # if (
-                #     self.on_truck
-                #     and self.this_delivery_distance > self.get_range_of_reach()
-                # ):
                 # We want to wait some amount of time for this battery swap
                 self.swap_battery()
                 self.battery_swap_timer += 1
@@ -734,8 +748,6 @@ class Truck:
 
         if len(self.packages[self.current_cluster]) == 0:
             return
-        # This is to make sure drones aren't assigned packages such that it's impossible to deliver them with a full charge
-        total_delivery_distance: float = 0
 
         # Assign initial package
         self.load_initial_package(drone=drone, strategy=self.strategy)
@@ -762,9 +774,10 @@ class Truck:
                     drone.no_customers_in_list = get_no_customers_from_packages(
                         packages=drone.packages
                     )
+                else:
+                    break
             else:
                 break
-        drone.this_delivery_distance = total_delivery_distance
 
     def add_cluster_centroid(self, pos: Tuple[int, ...]):
         """
