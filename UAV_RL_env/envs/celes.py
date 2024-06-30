@@ -495,15 +495,15 @@ class Truck:
     def __init__(
         self,
         position: Position,
+        strategy: Strategy,
         cost: float = 0.0006,
         truck_speed: int = 8,
         truck_id: Optional[int] = None,
         total_no_drones: int = 0,
-        strategy: str = "next_closest",
     ):
 
         # Strategy parameters
-        self.strategy: str = strategy
+        self.strategy: Strategy = strategy
 
         self.cost: float = cost
         self.truck_speed: int = truck_speed
@@ -589,16 +589,24 @@ class Truck:
                     ),
                 )
 
-    def select_initial_package(self, drone: Drone, strategy: str) -> Package:
-        # Try to get something from priority customers first
-        priority_customer_packages: List[Package] = [
-            package
-            for package in self.packages[self.current_cluster]
-            if package.customer in self.priority_customers
-        ]
-        if strategy in ("farthest_package_first", "farthest_package_first_MPA"):
+    def select_initial_package(self, strategy: Strategy) -> Package:
+        # Only use priority customers for MPA strategies
+        use_priority: bool = "mpa" in strategy.lower()
+        if use_priority:
+            priority_customer_packages: List[Package] = [
+                package
+                for package in self.packages[self.current_cluster]
+                if package.customer in self.priority_customers
+            ]
+        else:
+            priority_customer_packages = []
 
-            if len(priority_customer_packages) > 0:
+        if strategy in (
+            Strategy.FARTHEST_PACKAGE_FIRST,
+            Strategy.FARTHEST_PACKAGE_FIRST_MPA,
+        ):
+
+            if use_priority and len(priority_customer_packages) > 0:
                 package = get_farthest_package(
                     position=self.position, packages=priority_customer_packages
                 )
@@ -606,9 +614,12 @@ class Truck:
                 package = get_farthest_package(
                     position=self.position, packages=self.packages[self.current_cluster]
                 )
-        elif strategy in ("most_packages_first", "most_packages_first_MPA"):
-            if len(priority_customer_packages) > 0:
-                package = get_farthest_package(
+        elif strategy in (
+            Strategy.MOST_PACKAGES_FIRST,
+            Strategy.MOST_PACKAGES_FIRST_MPA,
+        ):
+            if use_priority and len(priority_customer_packages) > 0:
+                package = get_package_for_customer_with_most_packages(
                     position=self.position, packages=priority_customer_packages
                 )
             else:
@@ -616,14 +627,16 @@ class Truck:
                     position=self.position, packages=self.packages[self.current_cluster]
                 )
         else:
-            raise ValueError("No strategy!")
+            raise ValueError(
+                f"Strategy provided of {strategy} does not match any strategies accounted for."
+            )
 
         return package
 
-    def load_initial_package(self, drone: Drone, strategy: str):
-        package: Package = self.select_initial_package(drone=drone, strategy=strategy)
+    def load_initial_package(self, drone: Drone, strategy: Strategy):
+        package: Package = self.select_initial_package(strategy=strategy)
         if package is None:
-            raise ValueError("Selected package is None")
+            raise ValueError("Initial package is None")
 
         if not drone.can_make_trip(
             start_position=self.position, packages=[package], charge=100
@@ -670,7 +683,7 @@ class Truck:
                     next_package: Package = package
                 break
         if not next_package:
-            next_package = sorted_packages[0]
+            next_package = sorted_packages[0]  # Closest package
 
         return next_package
 
@@ -705,11 +718,12 @@ class Truck:
                 next_package: Package = self.get_next_package_mpa(
                     sorted_packages=sorted_packages_from_this_one, drone=drone
                 )
-            else:
-                next_package: Package = sorted_packages_from_this_one[0]
+                # Prioritise this customer!
+                self.priority_customers.add(next_package.customer)
 
-        # Prioritise this customer!
-        self.priority_customers.add(next_package.customer)
+            else:
+                next_package: Package = sorted_packages_from_this_one[0]  # Closest one
+
         return next_package
 
     def load_drone_package(self, drone: Drone):
@@ -1018,11 +1032,11 @@ def customer_not_already_in_list(
     return 1
 
 
-class Strategy(Enum):
-    MOST_PACKAGES_FIRST_MPA: str = "most_packages_first_MPA"
-    MOST_PACKAGES_FIRST: str = "most_packages_first"
-    FARTHEST_PACKAGE_FIRST: str = "farthest_package_first"
-    FARTHEST_PACKAGE_FIRST_MPA: str = "farthest_package_first_MPA"
+class Strategy(str, Enum):
+    MOST_PACKAGES_FIRST_MPA = "most_packages_first_MPA"
+    MOST_PACKAGES_FIRST = "most_packages_first"
+    FARTHEST_PACKAGE_FIRST = "farthest_package_first"
+    FARTHEST_PACKAGE_FIRST_MPA = "farthest_package_first_MPA"
 
 
 def get_next_closest_package(package: Package, packages: List[Package]) -> Package:
