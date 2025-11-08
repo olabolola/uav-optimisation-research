@@ -19,6 +19,8 @@ dev = [
     "ty>=0.0.1a25",
 ]
 
+[tool.ruff]
+line-length = 120
 [tool.ruff.lint]
 select = [
     # pycodestyle
