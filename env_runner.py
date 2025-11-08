@@ -1,5 +1,5 @@
-from typing import List, Dict
 import statistics
+
 import gymnasium as gym
 
 
@@ -11,7 +11,7 @@ class EnvRunner:
         no_clusters: int = 2,
         no_drones: int = 3,
         no_customers: int = 60,
-        p: List[float] = [1],
+        p: list[float] = [1],
         load: bool = False,
         load_file: str = "saved_states/saved_state_50_5.txt",
         strategy: str = "farthest_package_first",
@@ -86,10 +86,10 @@ class EnvRunner:
                 # The span is the time between the inital and final package deliveries for each customer
                 # We store seperate values for each original_no_packages
                 # Spans will be a dict with original_no_packages as the key and the total span as the value
-                spans: Dict[int, List[float]] = {2: [], 3: [], 4: []}
+                spans: dict[int, list[float]] = {2: [], 3: [], 4: []}
 
                 # Here we store the sum of the number of dropoffs for each customer grouped by original_no_packages
-                no_dropoffs: Dict[int, List[float]] = {2: [], 3: [], 4: []}
+                no_dropoffs: dict[int, list[float]] = {2: [], 3: [], 4: []}
 
                 # How many times drones were prevented from leaving the truck due to battery constraints
                 no_preventions: int = 0
@@ -99,16 +99,16 @@ class EnvRunner:
                 customers = obs["customer_observations"]
                 packages = obs["package_observations"]
 
-                customer_waiting_times: List[float] = [
+                customer_waiting_times: list[float] = [
                     float(customer["customer_waiting_time"]) for customer in customers
                 ]
 
-                package_waiting_times: List[float] = [
+                package_waiting_times: list[float] = [
                     float(package["package_waiting_time"]) for package in packages
                 ]
 
                 for customer in customers:
-                    if customer["original_no_packages"] in spans.keys():
+                    if customer["original_no_packages"] in spans:
                         # TODO look at this
                         spans[customer["original_no_packages"]].append(
                             float(
@@ -135,7 +135,7 @@ class EnvRunner:
                 no_battery_swaps: int = sum(
                     [drone["no_battery_swaps"] for drone in drones]
                 )
-                results: Dict = {
+                results: dict = {
                     "steps": steps,
                     "drone_travel_distance": drone_travel_distance,
                     "truck_travel_distance": truck_travel_distance,

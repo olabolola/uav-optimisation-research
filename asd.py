@@ -1,22 +1,21 @@
-from typing import List, Tuple, Dict
 import csv
 import math
 
 
-def get_euclidean_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
+def get_euclidean_distance(pos1: tuple[int, int], pos2: tuple[int, int]) -> float:
     """
     Return the Euclidean distance between two points.
     """
     return math.sqrt((pos2[1] - pos1[1]) ** 2 + (pos2[0] - pos1[0]) ** 2)
 
 
-def read_packages_from_file(file_name: str) -> List[Tuple[int, int]]:
+def read_packages_from_file(file_name: str) -> list[tuple[int, int]]:
     """
     Read packages from a CSV file and return a list of tuples (x, y).
     """
     packages = []
 
-    with open(file_name, "r") as f:
+    with open(file_name) as f:
         reader = csv.reader(f)
         next(reader)  # Skip the header
         for row in reader:
@@ -28,8 +27,8 @@ def read_packages_from_file(file_name: str) -> List[Tuple[int, int]]:
 
 
 def calculate_delivery_density(
-    packages: List[Tuple[int, int]], radius: float
-) -> Dict[Tuple[int, int], int]:
+    packages: list[tuple[int, int]], radius: float
+) -> dict[tuple[int, int], int]:
     """
     Calculate the delivery density for each package.
     """
@@ -45,7 +44,7 @@ def calculate_delivery_density(
     return density
 
 
-def calculate_average_density(density: Dict[Tuple[int, int], int]) -> float:
+def calculate_average_density(density: dict[tuple[int, int], int]) -> float:
     """
     Calculate the average delivery density.
     """

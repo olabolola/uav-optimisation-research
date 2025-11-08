@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-
 
 colors = ["#727272", "#599ad3"]
 no_customer_values = (50, 100, 200, 500)

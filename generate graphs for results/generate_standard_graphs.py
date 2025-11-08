@@ -20,7 +20,7 @@ def plot_by_X(df, by, mean_value_col, save=False):
     for strategy in strategies:
         mean_values[strategy] = []
 
-    for strategy in mean_values.keys():
+    for strategy in mean_values:
         if by == "no_customers":
             for no_customers in no_customer_values:
                 mean_values[strategy].append(

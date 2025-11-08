@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-
 # Setting font parameters
 font = {"family": "normal", "weight": "bold", "size": 12}
 

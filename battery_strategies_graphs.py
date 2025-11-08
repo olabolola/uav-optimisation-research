@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-
 
 # Setting font parameters
 font = {"family": "normal", "weight": "bold", "size": 12}
@@ -41,7 +39,7 @@ def get_average_no_dropoffs_per_strategy(df, mean_value_col, by, save=False):
     plt.ylabel("Average number of dropoffs")
     if save:
         path = "figures/"
-        filename = f"Average number of dropoffs for every strategy"
+        filename = "Average number of dropoffs for every strategy"
         plt.savefig(path + filename)
         plt.close()
     else:
@@ -73,7 +71,7 @@ def get_average_spans_per_strategy(df, save=False):
     plt.ylabel("Average spans")
     if save:
         path = "figures/"
-        filename = f"Average spans for every strategy"
+        filename = "Average spans for every strategy"
         plt.savefig(path + filename)
         plt.close()
     else:

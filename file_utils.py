@@ -1,9 +1,10 @@
-from typing import List, Dict, Any, Union
 import os
+from typing import Any, Union
+
 import pandas as pd
 
 # Define the schema for the results DataFrame
-RESULTS_SCHEMA: List[Dict[str, Any]] = [
+RESULTS_SCHEMA: list[dict[str, Any]] = [
     {"name": "strategy", "type": str},
     {"name": "scenario_id", "type": int},
     {"name": "no_drones", "type": int},
@@ -43,7 +44,7 @@ RESULTS_SCHEMA: List[Dict[str, Any]] = [
 ]
 
 
-def get_no_packages_per_category(filename: str, keys: List[int]) -> Dict[int, int]:
+def get_no_packages_per_category(filename: str, keys: list[int]) -> dict[int, int]:
     no_packages_per_category = {no: 0 for no in keys}
     with open(filename, encoding="utf-8") as f:
         lines = f.readlines()
@@ -54,7 +55,7 @@ def get_no_packages_per_category(filename: str, keys: List[int]) -> Dict[int, in
     return no_packages_per_category
 
 
-def get_no_customers_per_no_packages(filename: str, keys: List[int]) -> Dict[int, int]:
+def get_no_customers_per_no_packages(filename: str, keys: list[int]) -> dict[int, int]:
     no_customers_per_no_packages = {no: 0 for no in keys}
     with open(filename, encoding="utf-8") as f:
         lines = f.readlines()
@@ -78,12 +79,12 @@ def get_total_no_packages(filename: str):
 def save_result(
     scenario_id: int,
     strategy: str,
-    results: Dict[str, Any],
-    information: Dict[str, int],
+    results: dict[str, Any],
+    information: dict[str, int],
     process_id: int,
 ):
     # Create a dictionary with the result data
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "strategy": strategy,
         "scenario_id": scenario_id,
         "no_drones": information["no_drones"],
@@ -142,7 +143,7 @@ def save_result(
 
 def initialise_results_file_with_columns(results_file_path: str):
     # Extract column names from the schema
-    columns: List[str] = [col["name"] for col in RESULTS_SCHEMA]
+    columns: list[str] = [col["name"] for col in RESULTS_SCHEMA]
 
     # Create an empty DataFrame with the specified columns
     df = pd.DataFrame(columns=columns)

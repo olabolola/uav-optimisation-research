@@ -1,5 +1,5 @@
-from typing import Tuple, Dict
 import random
+
 import pandas as pd
 
 random.seed(42)
@@ -7,10 +7,10 @@ random.seed(42)
 GRID_HEIGHT: int = 2000
 GRID_WIDTH: int = 2000
 
-no_customers_values: Tuple[int, ...] = (50, 100, 200, 400)
+no_customers_values: tuple[int, ...] = (50, 100, 200, 400)
 no_scenarios_per_no_customers: int = 10
 
-probability_distribution_for_each_no_packages: Dict[int, float] = {
+probability_distribution_for_each_no_packages: dict[int, float] = {
     1: 0.85,
     2: 0.09,
     3: 0.04,

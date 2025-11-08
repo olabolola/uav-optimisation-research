@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import List, Optional, Tuple, Dict, Union, Set
+
 from dataclasses import dataclass
-from sklearn.cluster import KMeans
-import pandas as pd
 from enum import Enum
+
+import pandas as pd
+from sklearn.cluster import KMeans
 
 DRONE_BATTERY_SWAP_DELAY: int = 30
 CUSTOMER_PACKAGE_DELIVERY_DELAY: int = 120
@@ -15,10 +16,10 @@ class TripData:
     strategy: Strategy
     travel_distance: float
     trip_time: int
-    packages: List[Package]
-    customers: List[Customer]
+    packages: list[Package]
+    customers: list[Customer]
     battery_swapped: bool
-    decision_data: List[DecisionData]
+    decision_data: list[DecisionData]
 
 
 class DecisionData(str, Enum):
@@ -37,7 +38,7 @@ class Drone:
         passive_battery_consume: float = 0.001,  # Original is 0.001
         drone_speed: int = 10,
         battery: float = 100,
-        drone_id: Optional[int] = None,
+        drone_id: int | None = None,
         capacity: int = 2,
     ):
         # The capacity of the drone is the maximum number of packages it can carry at the same time
@@ -59,13 +60,13 @@ class Drone:
         # charge_increase is how much charge the battery increases every time step when it is charging
         self.charge_increase: float = 0.05
 
-        self.drone_id: Optional[int] = drone_id
+        self.drone_id: int | None = drone_id
 
         # Home truck is the truck the drone is initially loaded onto (And cannot change)
         self.home_truck: Truck = home_truck
 
         # The packages list contains the packages the drone is carrying RIGHT NOW
-        self.packages: List[Package] = []
+        self.packages: list[Package] = []
 
         # This is to check if drone is on its way somewhere
         self.en_route: bool = False
@@ -105,14 +106,14 @@ class Drone:
         self.battery_swap_timer: int = 0
 
         # Metric to store some data on each trip
-        self.trips: List[TripData] = []
+        self.trips: list[TripData] = []
 
     # When a drone returns from a trip delivering packages, we call this function to load additional packages
     def load_package(self):
         self.home_truck.load_drone_package(drone=self)
 
     def can_make_trip(
-        self, start_position: Position, packages: List[Package], charge: float
+        self, start_position: Position, packages: list[Package], charge: float
     ) -> bool:
         total_trip_distance = get_total_trip_distance(
             start_position=start_position, packages=packages
@@ -218,7 +219,7 @@ class Drone:
     def get_max_range(self):
         return (100 / self.active_battery_consume) * self.drone_speed
 
-    def deliver_next_package(self, unserviced_customers: List[Customer]):
+    def deliver_next_package(self, unserviced_customers: list[Customer]):
         """
         Move towards the next customer in our list.
         If we have no more customers to deliver to we go_to_home_truck()
@@ -276,7 +277,7 @@ class Drone:
                     # This is one of the packages we are delivering to the customer
                     package = self.packages[0]
 
-                    this_customers_packages: List[Package] = [
+                    this_customers_packages: list[Package] = [
                         package
                         for package in self.packages
                         if package.customer.position == self.position
@@ -371,7 +372,7 @@ class Position:
         self.x: int = x
         self.y: int = y
 
-    def get_position_info(self) -> Dict[str, int]:
+    def get_position_info(self) -> dict[str, int]:
         """Return a dictionary with position coordinates.
 
         Returns:
@@ -437,7 +438,7 @@ class Customer:
         # Here we store the number of packages not yet delivered to the customer
         # If everything has been delivered this variable will be 0
         self.no_of_packages: int = no_of_packages
-        self.packages: List[Package] = []
+        self.packages: list[Package] = []
         # Here we store the original number of packages
         # After all packages have been delivered this maintains its original value
         self.original_no_packages: int = no_of_packages
@@ -467,11 +468,11 @@ class Customer:
             f"no_dropoffs={self.no_dropoffs}, customer_waiting_time={self.customer_waiting_time})"
         )
 
-    def get_customer_info(self) -> Dict[str, Union[int, str]]:
+    def get_customer_info(self) -> dict[str, int | str]:
         # TODO convert this to a json method
-        d: Dict[str, int] = self.position.get_position_info()
+        d: dict[str, int] = self.position.get_position_info()
 
-        customer_info: Dict[str, Union[int, str]] = {
+        customer_info: dict[str, int | str] = {
             "x": d["x"],
             "y": d["y"],
             "residence_type": self.residence_type,
@@ -500,7 +501,7 @@ class Truck:
         strategy: Strategy,
         cost: float = 0.0006,
         truck_speed: int = 8,
-        truck_id: Optional[int] = None,
+        truck_id: int | None = None,
         total_no_drones: int = 0,
     ):
         # Strategy parameters
@@ -512,24 +513,24 @@ class Truck:
 
         # Each truck has a number of drones.
         # These two attributes pertain to the drones CURRENTLY ON THE TRUCK
-        self.current_drones_on_truck: List[Drone] = []
+        self.current_drones_on_truck: list[Drone] = []
         self.no_drones_currently_on_truck: int = 0
 
         # This attribute pertains to the drones wherever they may be
         self.total_no_drones_belonging_to_truck: int = total_no_drones
 
-        self.truck_id: Optional[int] = truck_id
+        self.truck_id: int | None = truck_id
 
-        self.packages: Dict = {}
+        self.packages: dict = {}
         self.no_packages: int = 0
 
         # List of cluster centroids truck must deliver to
-        self.cluster_centroids: List[Tuple[int, ...]] = []
+        self.cluster_centroids: list[tuple[int, ...]] = []
 
         self.is_moving: bool = False
 
         # This is the cluster the truck is currently delivering from
-        self.current_cluster: Tuple[int, ...]
+        self.current_cluster: tuple[int, ...]
 
         self.total_package_waiting_time: int = (
             0  # Here we store the total time for each package to be delivered
@@ -545,9 +546,9 @@ class Truck:
         self.total_time_in_cluster: float = 0
 
         # TODO remove customers from here once there packages are delivered
-        self.priority_customers: Set[Customer] = set()
+        self.priority_customers: set[Customer] = set()
 
-    def load_package(self, package: Package, cluster: Tuple[int, ...]):
+    def load_package(self, package: Package, cluster: tuple[int, ...]):
         """
         This function adds a package to the cluster list specified in the truck dict.
         If the cluster doesnt exist we add the cluster to the dict and then add the package
@@ -593,7 +594,7 @@ class Truck:
         # Only use priority customers for MPA strategies
         use_priority: bool = "mpa" in strategy.lower()
         if use_priority:
-            priority_customer_packages: List[Package] = [
+            priority_customer_packages: list[Package] = [
                 package
                 for package in self.packages[self.current_cluster]
                 if package.customer in self.priority_customers
@@ -649,15 +650,15 @@ class Truck:
         drone.no_customers_in_list += 1
 
     def select_any_package_for_customer(
-        self, customer: Customer, packages: List[Package]
-    ) -> Optional[Package]:
+        self, customer: Customer, packages: list[Package]
+    ) -> Package | None:
         for package in packages:
             if package.customer == customer:
                 return package
         return None
 
     def get_next_package_mpa(
-        self, sorted_packages: List[Package], drone: Drone
+        self, sorted_packages: list[Package], drone: Drone
     ) -> Package:
         # In MPA we want to see if we are disrupting the optimal delivery...
         # If we are we will skip this package
@@ -689,7 +690,7 @@ class Truck:
     def get_next_package(
         self,
         last_assigned_package: Package,
-        packages: List[Package],
+        packages: list[Package],
         strategy: str,
         drone: Drone,
     ) -> Package:
@@ -703,7 +704,7 @@ class Truck:
 
         # If the last assigned package's customer has no more packages on the truck we will begin looking around.
         if not any_customer_package:
-            sorted_packages_from_this_one: List[Package] = sorted(
+            sorted_packages_from_this_one: list[Package] = sorted(
                 packages,
                 key=lambda x: get_euclidean_distance(
                     last_assigned_package.customer.position, x.customer.position
@@ -763,16 +764,16 @@ class Truck:
             else:
                 break
 
-    def add_cluster_centroid(self, pos: Tuple[int, ...]):
+    def add_cluster_centroid(self, pos: tuple[int, ...]):
         """
         Here we add one of our cluster centroids to the list of cluster centroids on the truck as a tuple
         """
         self.cluster_centroids.append(pos)
 
-    def get_truck_info(self) -> Dict[str, Union[int, float]]:
+    def get_truck_info(self) -> dict[str, int | float]:
         # TODO convert this to a json method
         d = self.position.get_position_info()
-        truck_info: Dict[str, Union[int, float]] = {
+        truck_info: dict[str, int | float] = {
             "x": d["x"],
             "y": d["y"],
             "cost": self.cost,
@@ -918,7 +919,7 @@ class Warehouse:
         self.position: Position = position
 
     def cluster_and_colour(
-        self, customers: List[Customer], trucks: List[Truck], no_clusters: int
+        self, customers: list[Customer], trucks: list[Truck], no_clusters: int
     ):
         """
         In this function we cluster our customers using KMeans and assign them a colour.
@@ -1018,7 +1019,7 @@ def get_manhattan_distance(position1: Position, position2: Position) -> float:
 
 
 def customer_not_already_in_list(
-    customer_package: Package, package_list: List[Package]
+    customer_package: Package, package_list: list[Package]
 ) -> int:
     """
     Return 0 if the customer for customer_package is already in package_list and return 1 otherwise
@@ -1036,7 +1037,7 @@ class Strategy(str, Enum):
     FARTHEST_PACKAGE_FIRST_MPA = "farthest_package_first_MPA"
 
 
-def get_next_closest_package(package: Package, packages: List[Package]) -> Package:
+def get_next_closest_package(package: Package, packages: list[Package]) -> Package:
     min_distance = float("inf")
     closest_package = None
     for other_package in packages:
@@ -1052,7 +1053,7 @@ def get_next_closest_package(package: Package, packages: List[Package]) -> Packa
     return closest_package
 
 
-def get_total_trip_distance(start_position: Position, packages: List[Package]) -> float:
+def get_total_trip_distance(start_position: Position, packages: list[Package]) -> float:
     total_delivery_distance: float = get_euclidean_distance(
         start_position, packages[0].customer.position
     )
@@ -1067,7 +1068,7 @@ def get_total_trip_distance(start_position: Position, packages: List[Package]) -
     return total_delivery_distance
 
 
-def get_no_customers_from_packages(packages: List[Package]) -> int:
+def get_no_customers_from_packages(packages: list[Package]) -> int:
     unique_customers = set()
     for package in packages:
         unique_customers.add(package.customer)
@@ -1075,7 +1076,7 @@ def get_no_customers_from_packages(packages: List[Package]) -> int:
     return len(unique_customers)
 
 
-def get_farthest_package(position: Position, packages: List[Package]) -> Package:
+def get_farthest_package(position: Position, packages: list[Package]) -> Package:
     max_distance = -1
     farthest_package = None
 
@@ -1088,7 +1089,7 @@ def get_farthest_package(position: Position, packages: List[Package]) -> Package
     return farthest_package
 
 
-def get_closest_package(position: Position, packages: List[Package]) -> Package:
+def get_closest_package(position: Position, packages: list[Package]) -> Package:
     min_distance = float("inf")
     closest_package = None
 
@@ -1102,11 +1103,11 @@ def get_closest_package(position: Position, packages: List[Package]) -> Package:
 
 
 def get_package_for_customer_with_most_packages(
-    position: Position, packages: List[Package]
+    position: Position, packages: list[Package]
 ) -> Package:
     max_no_packages: int = -1
     customer_with_max_packages: Customer
-    packages_for_max_customer_on_truck: List[Package] = []
+    packages_for_max_customer_on_truck: list[Package] = []
 
     for package in packages:
         if package.customer.original_no_packages > max_no_packages:

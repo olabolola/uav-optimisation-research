@@ -1,15 +1,15 @@
-import timeit
+import os
 import random
 import statistics
-import os
-from typing import Tuple, Dict, List
+import timeit
 import warnings
-from gymnasium.envs.registration import register
-import tqdm
 
-from logger_setup import logger
+import tqdm
+from gymnasium.envs.registration import register
+
 import file_utils
 from env_runner import EnvRunner
+from logger_setup import logger
 
 random.seed(42)
 
@@ -24,10 +24,10 @@ saved_states_dir: str = "saved_states"
 
 file_utils.initialise_results_file_with_columns(results_file_path="results/results.csv")
 
-no_customers_values: Tuple[int, ...] = (50, 100, 200, 400)
-drone_capacity_values: Tuple[int, ...] = (1, 2, 3)
-no_drones_values: Tuple[int, ...] = (1, 2, 3, 4)
-strategies: Tuple[str, str, str, str] = (
+no_customers_values: tuple[int, ...] = (50, 100, 200, 400)
+drone_capacity_values: tuple[int, ...] = (1, 2, 3)
+no_drones_values: tuple[int, ...] = (1, 2, 3, 4)
+strategies: tuple[str, str, str, str] = (
     # "farthest_package_first_MPA",
     # "farthest_package_first",
     # "closest_package_first",
@@ -38,7 +38,7 @@ strategies: Tuple[str, str, str, str] = (
 )
 
 NUMBER_OF_ITERATIONS: int = 1
-no_clusters_per_no_customers: Dict[int, List[int]] = {
+no_clusters_per_no_customers: dict[int, list[int]] = {
     50: [2],
     100: [2, 4],
     200: [2, 4, 8],
@@ -62,10 +62,10 @@ def run_iteration(args):
         strategy=params["strategy"],
         drone_capacity=params["drone_capacity"],
     )
-    spans: Dict[int, List[int]] = results["spans"]
-    no_dropoffs: Dict[int, List[int]] = results["no_dropoffs"]
+    spans: dict[int, list[int]] = results["spans"]
+    no_dropoffs: dict[int, list[int]] = results["no_dropoffs"]
     no_packages_total = file_utils.get_total_no_packages(filename)
-    no_customers_per_no_packages: Dict[int, int] = (
+    no_customers_per_no_packages: dict[int, int] = (
         file_utils.get_no_customers_per_no_packages(filename, [1, 2, 3, 4])
     )
 

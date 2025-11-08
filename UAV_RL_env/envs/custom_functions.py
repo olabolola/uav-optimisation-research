@@ -1,11 +1,12 @@
-from typing import List, Tuple
-import pandas as pd
-import numpy as np
+
 import gymnasium as gym
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from gymnasium import spaces
 
 from logger_setup import logger
+
 from . import celes
 from .celes import Drone, Truck
 
@@ -23,14 +24,14 @@ class custom_class(gym.Env):
         no_drones: int,
         no_clusters: int,
         file_suffix: str,
-        p: List[int],
+        p: list[int],
         load: bool,
         load_file: str,
         strategy: str,
         save_state: bool,
         drone_capacity: int,
     ):
-        self.packages: List[celes.Package] = []
+        self.packages: list[celes.Package] = []
 
         # Indicates if we want to save our run or not
         self.save_state: bool = save_state
@@ -62,9 +63,9 @@ class custom_class(gym.Env):
 
         # Customer initialization
         self.no_customers: int = no_customers
-        self.customers: List[celes.Customer] = []
-        self.unserviced_customers: List[celes.Customer] = []
-        self.customer_positions: List[celes.Position] = []
+        self.customers: list[celes.Customer] = []
+        self.unserviced_customers: list[celes.Customer] = []
+        self.customer_positions: list[celes.Position] = []
 
         # TODO dont duplicate between reset and here
         if self.load:
@@ -73,14 +74,14 @@ class custom_class(gym.Env):
             )
 
         # Probability distribution for the packages
-        self.p: List[int] = p
+        self.p: list[int] = p
 
         # Truck and drone initialization
         self.no_trucks: int = no_trucks
-        self.trucks: List[celes.Truck] = []
+        self.trucks: list[celes.Truck] = []
 
         self.no_drones: int = no_drones
-        self.drones: List[celes.Drone] = []
+        self.drones: list[celes.Drone] = []
 
         # Number of packages our drone can carry
         self.drone_capacity: int = drone_capacity
@@ -164,7 +165,7 @@ class custom_class(gym.Env):
 
         return total
 
-    def step(self, action: Tuple[List[str], ...]):
+    def step(self, action: tuple[list[str], ...]):
         # actions is a list containing two elements; a list of truck actions and a list of drone actions
         # for each truck and drone respectively
 
@@ -178,12 +179,12 @@ class custom_class(gym.Env):
                     package.waiting_time += 1
 
         # For now trucks either move towards a certain position or just stay still
-        truck_actions: List[str] = action[0]
+        truck_actions: list[str] = action[0]
         for truck, truck_action in zip(self.trucks, truck_actions):
             self._take_truck_action(truck, truck_action)
 
         # Action will be a list of actions for each drone
-        drone_actions: List[str] = action[1]
+        drone_actions: list[str] = action[1]
         for drone, drone_action in zip(self.drones, drone_actions):
             self._take_drone_action(drone, drone_action)
 
@@ -218,7 +219,7 @@ class custom_class(gym.Env):
     # This function load the customer positions and number of packages for each customer
 
     def load_from_file(self):
-        with open(self.load_file, "r", encoding="utf-8") as file:
+        with open(self.load_file, encoding="utf-8") as file:
             lines = file.readlines()
             self.no_customers = len(lines) - 1
 
@@ -387,9 +388,9 @@ class custom_class(gym.Env):
 
 
 def generate_observations(
-    trucks: List[celes.Truck],
-    drones: List[celes.Drone],
-    customers: List[celes.Customer],
+    trucks: list[celes.Truck],
+    drones: list[celes.Drone],
+    customers: list[celes.Customer],
 ):
     # Collect truck observations
     truck_observations = []
