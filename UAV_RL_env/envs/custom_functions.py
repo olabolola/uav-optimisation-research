@@ -180,12 +180,12 @@ class custom_class(gym.Env):
 
         # For now trucks either move towards a certain position or just stay still
         truck_actions: list[str] = action[0]
-        for truck, truck_action in zip(self.trucks, truck_actions):
+        for truck, truck_action in zip(self.trucks, truck_actions, strict=False):
             self._take_truck_action(truck, truck_action)
 
         # Action will be a list of actions for each drone
         drone_actions: list[str] = action[1]
-        for drone, drone_action in zip(self.drones, drone_actions):
+        for drone, drone_action in zip(self.drones, drone_actions, strict=False):
             self._take_drone_action(drone, drone_action)
 
         for customer in self.customers:
@@ -238,8 +238,10 @@ class custom_class(gym.Env):
 
                 self.customers.append(customer)
 
-    def reset(self, options={}, seed=None):
+    def reset(self, options=None, seed=None):
         # Initialization
+        if options is None:
+            options = {}
         self.customers = []
         self.customer_positions = []
 
@@ -355,8 +357,8 @@ class custom_class(gym.Env):
                 alpha=0.5,
                 label="customer",
             )
-        drone_plot = ax1.scatter(drone_x, drone_y, c="b", label="drone", marker=".")
-        truck_plot = ax1.scatter(truck_x, truck_y, c="g", label="truck", marker=",")
+        ax1.scatter(drone_x, drone_y, c="b", label="drone", marker=".")
+        ax1.scatter(truck_x, truck_y, c="g", label="truck", marker=",")
 
         # plt.legend((drone_plot, truck_plot), ("drone", "truck"), loc = "lower left")
         plt.xlim(-10, GRID_WIDTH)

@@ -11,13 +11,15 @@ class EnvRunner:
         no_clusters: int = 2,
         no_drones: int = 3,
         no_customers: int = 60,
-        p: list[float] = [1],
+        p: list[float] = None,
         load: bool = False,
         load_file: str = "saved_states/saved_state_50_5.txt",
         strategy: str = "farthest_package_first",
         save_state: bool = False,
         drone_capacity: int = 2,
     ):
+        if p is None:
+            p = [1]
         env = gym.make(
             "HDS-v1",
             no_customers=no_customers,
@@ -50,7 +52,6 @@ class EnvRunner:
         # steps[0] will store the total time, while steps[1] will store the time it takes
         steps = [0, 0]
 
-        render_cnt = 0
         while True:
             done: bool
             obs, _, done, _, info = env.step(action)
@@ -77,8 +78,6 @@ class EnvRunner:
                 X2 = 0  # X2 is the total active time of drones (including 2 minute dropoff time)
 
                 # This is sum of time for each package to reach the customer
-                total_package_waiting_time = 0
-                total_customer_waiting_time = 0
 
                 # Total amount of time spent in the 2 min delay while delivering package
                 total_delay_time = 0

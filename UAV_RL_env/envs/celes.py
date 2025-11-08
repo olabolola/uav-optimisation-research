@@ -326,9 +326,8 @@ class Drone:
         # If we have no more packages, go back to the home truck
         else:
             self.go_to_home_truck()
-            if not self.en_route:
-                if self.home_truck.no_packages > 0:
-                    self.load_package()
+            if not self.en_route and self.home_truck.no_packages > 0:
+                self.load_package()
 
     def swap_battery(self):
         """
@@ -887,7 +886,7 @@ class Truck:
             return False
 
         if (
-            self.current_cluster != None
+            self.current_cluster is not None
             and len(self.packages[self.current_cluster]) != 0
         ):
             return False
@@ -940,28 +939,6 @@ class Warehouse:
 
         centroids = kmeans.cluster_centers_
 
-        colours = {
-            0: "#8B0000",
-            1: "#DB7093",
-            2: "#FFA500",
-            3: "#BDB76B",
-            4: "#7B68EE",
-            5: "#008080",
-            6: "#CD5C5C",
-            7: "#FFC0CB",
-            8: "#FFA07A",
-            9: "#FFD700",
-            10: "#E6E6FA",
-            11: "#ADFF2F",
-            12: "#00FFFF",
-            13: "#FFF8DC",
-            14: "#DCDCDC",
-            15: "#191970",
-            16: "#800000",
-            17: "#FFE4E1",
-            18: "#000000",
-            19: "#5489fc",
-        }
 
         # Here we just give all the packages to each truck based on the cluster (not sorted)
 
@@ -978,7 +955,7 @@ class Warehouse:
             i = (i + 1) % no_trucks
 
         # Here we assign colours to each customer and distribute the packages to the trucks
-        for cluster_label, customer in zip(cluster_labels, customers):
+        for cluster_label, customer in zip(cluster_labels, customers, strict=False):
             # customer.colour = colours[cluster_label]
             truck_idx = truck_for_cluster[cluster_label]
             for package in customer.packages:

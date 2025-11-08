@@ -1,5 +1,5 @@
 import os
-from typing import Any, Union
+from typing import Any
 
 import pandas as pd
 
@@ -22,20 +22,20 @@ RESULTS_SCHEMA: list[dict[str, Any]] = [
     {"name": "Total Customer Delivery Time", "type": float},
     {"name": "Average Package Delivery Time", "type": float},
     {"name": "Average Customer Delivery Time", "type": float},
-    {"name": "Median Package Delivery Time", "type": Union[float, int]},
-    {"name": "Median Customer Delivery Time", "type": Union[float, int]},
+    {"name": "Median Package Delivery Time", "type": float | int},
+    {"name": "Median Customer Delivery Time", "type": float | int},
     {"name": "avg_span_2", "type": float},
     {"name": "avg_span_3", "type": float},
     {"name": "avg_span_4", "type": float},
     {"name": "avg_nodropoffs_2", "type": float},
     {"name": "avg_nodropoffs_3", "type": float},
     {"name": "avg_nodropoffs_4", "type": float},
-    {"name": "median_span_2", "type": Union[float, int]},
-    {"name": "median_span_3", "type": Union[float, int]},
-    {"name": "median_span_4", "type": Union[float, int]},
-    {"name": "median_nodropoffs_2", "type": Union[float, int]},
-    {"name": "median_nodropoffs_3", "type": Union[float, int]},
-    {"name": "median_nodropoffs_4", "type": Union[float, int]},
+    {"name": "median_span_2", "type": float | int},
+    {"name": "median_span_3", "type": float | int},
+    {"name": "median_span_4", "type": float | int},
+    {"name": "median_nodropoffs_2", "type": float | int},
+    {"name": "median_nodropoffs_3", "type": float | int},
+    {"name": "median_nodropoffs_4", "type": float | int},
     {"name": "no_of_customers_with_1_package", "type": int},
     {"name": "no_of_customers_with_2_package", "type": int},
     {"name": "no_of_customers_with_3_package", "type": int},
