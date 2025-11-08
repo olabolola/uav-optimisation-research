@@ -4,7 +4,6 @@ import gymnasium as gym
 
 
 class EnvRunner:
-
     @staticmethod
     def run_env(
         run_number: int = 0,
@@ -19,7 +18,6 @@ class EnvRunner:
         save_state: bool = False,
         drone_capacity: int = 2,
     ):
-
         env = gym.make(
             "HDS-v1",
             no_customers=no_customers,
@@ -46,9 +44,7 @@ class EnvRunner:
         # Convert actions to tuple
         action = (truck_actions, drone_actions)
 
-        total_time: int = (
-            0  # Here we store the number of steps for the trucks to return to the warehouse
-        )
+        total_time: int = 0  # Here we store the number of steps for the trucks to return to the warehouse
         A: int = 0  # Here we store the number of steps until all packages are delivered
 
         # steps[0] will store the total time, while steps[1] will store the time it takes
@@ -56,7 +52,6 @@ class EnvRunner:
 
         render_cnt = 0
         while True:
-
             done: bool
             obs, _, done, _, info = env.step(action)
             total_time += 1
@@ -71,7 +66,6 @@ class EnvRunner:
 
             # When we are finished (trucks return to warehouse) we will return the results of the run
             if done:
-
                 # After the simulation is over store the total number of steps and A
                 steps[0] = total_time
                 steps[1] = A

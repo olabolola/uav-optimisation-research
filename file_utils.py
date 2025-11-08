@@ -110,8 +110,8 @@ def save_result(
         "median_nodropoffs_4": results["avg_nodropoofs_4"],
         "The Number of Battery Swaps": results["no_battery_swaps"],
         "Total Time to Deliver All Packages": results["steps"][1],
-        "Total Package Delivery Time": results["Total Package Delivery Time"], 
-        "Total Customer Delivery Time": results["Total Customer Delivery Time"], 
+        "Total Package Delivery Time": results["Total Package Delivery Time"],
+        "Total Customer Delivery Time": results["Total Customer Delivery Time"],
         "Average Customer Delivery Time": results["average_customer_waiting_time"],
         "Average Package Delivery Time": results["average_package_waiting_time"],
         "Median Package Delivery Time": results["median_package_waiting_time"],
@@ -125,9 +125,9 @@ def save_result(
     # Validate the data against the schema
     for col in RESULTS_SCHEMA:
         if col["name"] in data:
-            assert isinstance(
-                data[col["name"]], col["type"]
-            ), f"Invalid type for column '{col['name']}' expected '{col["type"]}' got '{type(data[col["name"]])}'"
+            assert isinstance(data[col["name"]], col["type"]), (
+                f"Invalid type for column '{col['name']}' expected '{col['type']}' got '{type(data[col['name']])}'"
+            )
         else:
             raise ValueError(f"Missing column '{col['name']}' in result data")
 

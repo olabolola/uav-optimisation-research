@@ -29,7 +29,6 @@ class DecisionData(str, Enum):
 
 
 class Drone:
-
     def __init__(
         self,
         position: Position,
@@ -41,7 +40,6 @@ class Drone:
         drone_id: Optional[int] = None,
         capacity: int = 2,
     ):
-
         # The capacity of the drone is the maximum number of packages it can carry at the same time
         self.capacity: int = capacity
 
@@ -134,7 +132,6 @@ class Drone:
 
         # First check we don't overshoot. If we don't overshoot then just move the full distance (according to speed)
         if distance <= self.drone_speed:  # Here we go straight to the truck
-
             self.consume_battery(distance)
 
             # Here we add the distance travelled now to the total distance travelled
@@ -164,7 +161,6 @@ class Drone:
         self.en_route = True
         self.on_truck = False
         if distance < self.drone_speed:
-
             self.consume_battery(distance)
 
             # Here we add the distance travelled now to the total distance travelled
@@ -176,7 +172,6 @@ class Drone:
 
             return True
         else:
-
             distance_traveled = self.position.get_point_on_line(
                 position, self.drone_speed
             )
@@ -238,7 +233,6 @@ class Drone:
         # First check if we have any packages to deliver. If that is the case check if we can reach
         # the customers using our current charge. If so then deliver.
         if len(self.packages) > 0:
-
             # Here we check if we have the necessary battery to perform the delivery
             if self.on_truck and not self.can_make_trip(
                 start_position=self.home_truck.position,
@@ -267,7 +261,6 @@ class Drone:
 
             # This allows us to deliver all the packages at once if we arrive at a certain customer
             if arrived:
-
                 self.en_route = False
                 # Once we arrive at a customer, we want to perform a 2 minute delay (120 steps)
                 self.delay_variable += 1
@@ -331,7 +324,6 @@ class Drone:
 
         # If we have no more packages, go back to the home truck
         else:
-
             self.go_to_home_truck()
             if not self.en_route:
                 if self.home_truck.no_packages > 0:
@@ -356,7 +348,6 @@ class Drone:
 
 
 class Package:
-
     def __init__(
         self, customer: Customer, mass: float = 10, height: float = 5, width: float = 5
     ):
@@ -375,7 +366,6 @@ class Package:
 
 
 class Position:
-
     def __init__(self, x: int, y: int):
         # Suppose the location of a truck, drone or house is defined by (x, y)
         self.x: int = x
@@ -437,7 +427,6 @@ class Position:
 
 
 class Customer:
-
     def __init__(
         self, position: Position, residence_type: str, no_of_packages: int = 0
     ):
@@ -502,7 +491,6 @@ class Customer:
 
 
 class Truck:
-
     no_of_drones = 0
 
     # We might just want to inherit from a superclass...
@@ -515,7 +503,6 @@ class Truck:
         truck_id: Optional[int] = None,
         total_no_drones: int = 0,
     ):
-
         # Strategy parameters
         self.strategy: Strategy = strategy
 
@@ -579,7 +566,6 @@ class Truck:
         if (
             how == "distance"
         ):  # Here we sort the packages according to the distance from the center of the cluster
-
             for cluster, package_list in self.packages.items():
                 cluster_position: Position = Position(cluster[0], cluster[1])
                 self.packages[cluster] = sorted(
@@ -619,7 +605,6 @@ class Truck:
             Strategy.FARTHEST_PACKAGE_FIRST,
             Strategy.FARTHEST_PACKAGE_FIRST_MPA,
         ):
-
             if use_priority and len(priority_customer_packages) > 0:
                 package = get_farthest_package(
                     position=self.position, packages=priority_customer_packages
@@ -708,7 +693,6 @@ class Truck:
         strategy: str,
         drone: Drone,
     ) -> Package:
-
         # If we have just loaded a customer's package and that same customer still has more packages then we will load them...
         any_customer_package = self.select_any_package_for_customer(
             customer=last_assigned_package.customer, packages=packages
@@ -1120,7 +1104,6 @@ def get_closest_package(position: Position, packages: List[Package]) -> Package:
 def get_package_for_customer_with_most_packages(
     position: Position, packages: List[Package]
 ) -> Package:
-
     max_no_packages: int = -1
     customer_with_max_packages: Customer
     packages_for_max_customer_on_truck: List[Package] = []
@@ -1148,7 +1131,6 @@ def ceildiv(a, b):
 def will_delivering_this_package_disrupt_optimal_no_dropoffs(
     total_drone_capacity: int, remaining_drone_capacity: int, package: Package
 ) -> bool:
-
     no_of_packages_on_truck_for_this_package: int = package.customer.no_of_packages
 
     optimal_no_dropoffs: int = ceildiv(

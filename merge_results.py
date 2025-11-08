@@ -21,9 +21,7 @@ def merge_results(results_dir: str, prefix: str):
     merged_df = pd.concat(df_list, ignore_index=True)
 
     # Write the merged DataFrame to the consolidated results file
-    merged_df.to_csv(
-        os.path.join(results_dir, "results.csv"), index=False
-    )
+    merged_df.to_csv(os.path.join(results_dir, "results.csv"), index=False)
 
     # Clean up the process-specific files
     # for file_name in file_names:

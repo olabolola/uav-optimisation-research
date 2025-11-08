@@ -16,7 +16,6 @@ GRID_HEIGHT = 2000
 
 
 class custom_class(gym.Env):
-
     def __init__(
         self,
         no_customers: int,
@@ -31,7 +30,6 @@ class custom_class(gym.Env):
         save_state: bool,
         drone_capacity: int,
     ):
-
         self.packages: List[celes.Package] = []
 
         # Indicates if we want to save our run or not
@@ -167,7 +165,6 @@ class custom_class(gym.Env):
         return total
 
     def step(self, action: Tuple[List[str], ...]):
-
         # actions is a list containing two elements; a list of truck actions and a list of drone actions
         # for each truck and drone respectively
 
@@ -202,7 +199,6 @@ class custom_class(gym.Env):
         # Check if we are done
         # First we check if there are no more customers to deliver to
         if len(self.unserviced_customers) == 0:
-
             self.done = True
 
             # Here we make sure the truck has returned to the warehouse
@@ -242,7 +238,6 @@ class custom_class(gym.Env):
                 self.customers.append(customer)
 
     def reset(self, options={}, seed=None):
-
         # Initialization
         self.customers = []
         self.customer_positions = []
@@ -253,7 +248,6 @@ class custom_class(gym.Env):
         # Truck and drone initialization
 
         for i in range(self.no_trucks):
-
             x = self.warehouse_position.x
             y = self.warehouse_position.y
             position = celes.Position(x, y)
@@ -286,7 +280,6 @@ class custom_class(gym.Env):
 
         # Customer initialization
         for _ in range(self.no_customers):
-
             x = np.random.randint(1, GRID_WIDTH)
             y = np.random.randint(1, GRID_HEIGHT)
             position = celes.Position(x, y)
@@ -312,7 +305,6 @@ class custom_class(gym.Env):
 
         # Here we save the state of our system
         if self.save_state:
-
             with open(
                 f"saved_states/saved_state_{self.no_customers}_{self.file_suffix}.txt",
                 "w",
@@ -331,7 +323,6 @@ class custom_class(gym.Env):
         return tuple([observations, {}])
 
     def render(self, mode: str = "human", close: bool = False):
-
         customer_x = []
         customer_y = []
 
@@ -373,7 +364,6 @@ class custom_class(gym.Env):
         plt.show()
 
     def _take_drone_action(self, drone: Drone, action: str):
-
         # TODO removed steadystate consumption
         if drone.waiting:
             drone.steadystate_consumption()
@@ -389,7 +379,6 @@ class custom_class(gym.Env):
         # drone.charge()
 
     def _take_truck_action(self, truck: Truck, action: str):
-
         # For now action is a 2-tuple that tells the truck where to go to
         if action == "go_to_next_cluster":
             truck.go_to_next_cluster()

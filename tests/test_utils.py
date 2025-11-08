@@ -7,7 +7,6 @@ from UAV_RL_env.envs.celes import (
 
 
 class TestGetPackageForCustomerWithMostPackages(unittest.TestCase):
-
     def test_single_customer_with_most_packages(self):
         customer1 = Customer(1, 5)
         customer2 = Customer(2, 3)
